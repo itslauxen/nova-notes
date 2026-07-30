@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Bot, Plus, Trash2, Check, Share2 } from "lucide-react";
 import { agentsApi } from "../lib/store";
+import { useLang } from "../context/LanguageContext";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ShareDialog from "../components/ShareDialog";
 
 // Página de Agentes: prompts em Markdown reutilizáveis (usados no atalho /agente).
 export default function Agents() {
+  const { t } = useLang();
   const [agents, setAgents] = useState([]);
   const [sharedAgents, setSharedAgents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,21 +51,20 @@ export default function Agents() {
     <div className="panel" style={{ maxWidth: 820 }}>
       <div className="panel-title">
         <Bot size={22} style={{ verticalAlign: "-4px", marginRight: 8, color: "var(--accent)" }} />
-        Agentes
+        {t("nav.agents")}
       </div>
       <div className="panel-sub">
-        Crie prompts reutilizáveis. Depois, no editor, digite <code>/agente</code> pra
-        escolher um (ou somar vários) e passar uma instrução.
+        {t("agents.subPre")}<code>/agente</code>{t("agents.subPost")}
       </div>
 
       <button className="btn-primary" onClick={create} style={{ marginBottom: 20 }}>
-        <Plus size={15} /> Novo agente
+        <Plus size={15} /> {t("agents.newAgent")}
       </button>
 
       {loading ? (
-        <div className="agent-empty">Carregando…</div>
+        <div className="agent-empty">{t("agents.loading")}</div>
       ) : agents.length === 0 ? (
-        <div className="agent-empty">Nenhum agente ainda. Crie o primeiro acima.</div>
+        <div className="agent-empty">{t("agents.empty")}</div>
       ) : (
         <div className="agent-list">
           {agents.map((a) => (
@@ -72,25 +73,25 @@ export default function Agents() {
                 <input
                   className="agent-name"
                   value={a.title || ""}
-                  placeholder="Nome do agente"
+                  placeholder={t("agents.agentName")}
                   onChange={(e) => patch(a.id, { title: e.target.value })}
                 />
                 {savedId === a.id && (
                   <span className="agent-saved">
-                    <Check size={13} /> salvo
+                    <Check size={13} /> {t("common.saved")}
                   </span>
                 )}
                 <button
                   className="agent-del"
-                  title="Compartilhar"
+                  title={t("common.share")}
                   onClick={() => setShareFor({ id: a.id, title: a.title })}
                 >
                   <Share2 size={15} />
                 </button>
                 <button
                   className="agent-del"
-                  title="Excluir"
-                  onClick={() => setConfirm({ id: a.id, name: a.title || "agente" })}
+                  title={t("common.delete")}
+                  onClick={() => setConfirm({ id: a.id, name: a.title || t("agents.agentFallback") })}
                 >
                   <Trash2 size={15} />
                 </button>
@@ -98,7 +99,7 @@ export default function Agents() {
               <textarea
                 className="agent-prompt field"
                 rows={5}
-                placeholder="Escreva o prompt (Markdown). Ex.: Você é um revisor de textos. Corrija a gramática, deixe mais claro e conciso, mantendo o tom."
+                placeholder={t("agents.promptPlaceholder")}
                 value={a.content || ""}
                 onChange={(e) => patch(a.id, { content: e.target.value })}
               />
@@ -110,7 +111,7 @@ export default function Agents() {
       {sharedAgents.length > 0 && (
         <>
           <div className="panel-title" style={{ fontSize: 18, marginTop: 28 }}>
-            Compartilhados comigo
+            {t("agents.sharedWithMe")}
           </div>
           <div className="agent-list">
             {sharedAgents.map((a) => (
@@ -132,8 +133,8 @@ export default function Agents() {
 
       {confirm && (
         <ConfirmDialog
-          title="Excluir agente"
-          message={`Tem certeza que deseja excluir "${confirm.name}"?`}
+          title={t("agents.deleteAgent")}
+          message={t("agents.deleteConfirm", { name: confirm.name })}
           onConfirm={async () => {
             await agentsApi.remove(confirm.id);
             setConfirm(null);

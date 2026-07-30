@@ -1,22 +1,24 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Trash2, Type, Heading1, Heading2, Heading3, List, ListChecks, Quote, Code } from 'lucide-react'
+import { useLang } from '../context/LanguageContext'
 
 // opções de "transformar em" (usa clearNodes pra normalizar antes de aplicar,
 // então um to-do vira h1, um h1 vira lista, etc.)
 const TRANSFORMS = [
-  { label: 'Texto', Icon: Type, apply: (c) => c.clearNodes().run() },
-  { label: 'Título 1', Icon: Heading1, apply: (c) => c.clearNodes().setNode('heading', { level: 1 }).run() },
-  { label: 'Título 2', Icon: Heading2, apply: (c) => c.clearNodes().setNode('heading', { level: 2 }).run() },
-  { label: 'Título 3', Icon: Heading3, apply: (c) => c.clearNodes().setNode('heading', { level: 3 }).run() },
-  { label: 'Lista', Icon: List, apply: (c) => c.clearNodes().toggleBulletList().run() },
-  { label: 'To-do', Icon: ListChecks, apply: (c) => c.clearNodes().toggleTaskList().run() },
-  { label: 'Citação', Icon: Quote, apply: (c) => c.clearNodes().toggleBlockquote().run() },
-  { label: 'Código', Icon: Code, apply: (c) => c.clearNodes().toggleCodeBlock().run() },
+  { labelKey: 'slash.text', Icon: Type, apply: (c) => c.clearNodes().run() },
+  { labelKey: 'slash.h1', Icon: Heading1, apply: (c) => c.clearNodes().setNode('heading', { level: 1 }).run() },
+  { labelKey: 'slash.h2', Icon: Heading2, apply: (c) => c.clearNodes().setNode('heading', { level: 2 }).run() },
+  { labelKey: 'slash.h3', Icon: Heading3, apply: (c) => c.clearNodes().setNode('heading', { level: 3 }).run() },
+  { labelKey: 'slash.list', Icon: List, apply: (c) => c.clearNodes().toggleBulletList().run() },
+  { labelKey: 'slash.todo', Icon: ListChecks, apply: (c) => c.clearNodes().toggleTaskList().run() },
+  { labelKey: 'slash.quote', Icon: Quote, apply: (c) => c.clearNodes().toggleBlockquote().run() },
+  { labelKey: 'slash.code', Icon: Code, apply: (c) => c.clearNodes().toggleCodeBlock().run() },
 ]
 
 // Menu que abre ao clicar no drag handle de um bloco: transformar ou excluir.
 export default function BlockHandleMenu({ editor }) {
+  const { t } = useLang()
   const [menu, setMenu] = useState(null) // { x, y, pos }
 
   useEffect(() => {
@@ -35,8 +37,8 @@ export default function BlockHandleMenu({ editor }) {
   if (!menu || !editor) return null
 
   const at = () => editor.chain().focus().setTextSelection(menu.pos + 1)
-  const transform = (t) => {
-    t.apply(at())
+  const transform = (item) => {
+    item.apply(at())
     setMenu(null)
   }
   const del = () => {
@@ -57,15 +59,15 @@ export default function BlockHandleMenu({ editor }) {
         onContextMenu={(e) => { e.preventDefault(); setMenu(null) }}
       />
       <div className="card-menu block-menu" style={{ position: 'fixed', top: Math.max(8, top), left: Math.max(8, left), right: 'auto', zIndex: 200 }}>
-        <div className="block-menu-label">Transformar em</div>
-        {TRANSFORMS.map((t) => (
-          <button key={t.label} onClick={() => transform(t)}>
-            <t.Icon size={14} /> {t.label}
+        <div className="block-menu-label">{t('block.transformInto')}</div>
+        {TRANSFORMS.map((it) => (
+          <button key={it.labelKey} onClick={() => transform(it)}>
+            <it.Icon size={14} /> {t(it.labelKey)}
           </button>
         ))}
         <div className="block-menu-sep" />
         <button className="danger" onClick={del}>
-          <Trash2 size={14} /> Excluir bloco
+          <Trash2 size={14} /> {t('block.deleteBlock')}
         </button>
       </div>
     </>,

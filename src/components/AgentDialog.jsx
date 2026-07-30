@@ -4,9 +4,11 @@ import { Bot, Check, Mic, Square, Loader2 } from "lucide-react";
 import { agentsApi } from "../lib/store";
 import { recordVoice } from "../lib/recorder";
 import { transcribe } from "../lib/ai";
+import { useLang } from "../context/LanguageContext";
 
 // Escolhe um ou mais agentes (soma os prompts) e passa uma instrução.
 export default function AgentDialog({ onSubmit, onCancel }) {
+  const { t } = useLang();
   const [agents, setAgents] = useState([]);
   const [sel, setSel] = useState([]); // ids selecionados
   const [instr, setInstr] = useState("");
@@ -72,16 +74,16 @@ export default function AgentDialog({ onSubmit, onCancel }) {
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()} onKeyDown={onKey}>
         <div className="modal-title">
-          <Bot size={17} style={{ verticalAlign: "middle", color: "var(--accent)" }} /> Rodar agente
+          <Bot size={17} style={{ verticalAlign: "middle", color: "var(--accent)" }} /> {t("agentDialog.title")}
         </div>
 
         {agents.length === 0 ? (
           <div className="modal-msg">
-            Você ainda não tem agentes. Crie em <strong>Agentes</strong> na barra lateral.
+            {t("agentDialog.noAgentsPre")}<strong>{t("nav.agents")}</strong>{t("agentDialog.noAgentsPost")}
           </div>
         ) : (
           <>
-            <div className="modal-msg">Escolha um ou mais agentes (eles se somam):</div>
+            <div className="modal-msg">{t("agentDialog.pick")}</div>
             <div className="agent-pick">
               {agents.map((a) => {
                 const on = sel.includes(a.id);
@@ -93,7 +95,7 @@ export default function AgentDialog({ onSubmit, onCancel }) {
                     type="button"
                   >
                     <span className="agent-chip-emoji">{a.emoji || "🤖"}</span>
-                    {a.title || "Sem nome"}
+                    {a.title || t("agentDialog.noName")}
                     {on && <Check size={13} style={{ marginLeft: "auto" }} />}
                   </button>
                 );
@@ -104,7 +106,7 @@ export default function AgentDialog({ onSubmit, onCancel }) {
                 ref={ref}
                 className="field"
                 rows={3}
-                placeholder="Instrução (opcional). Fale ou escreva…"
+                placeholder={t("agentDialog.instrPlaceholder")}
                 value={instr}
                 onChange={(e) => setInstr(e.target.value)}
               />
@@ -115,10 +117,10 @@ export default function AgentDialog({ onSubmit, onCancel }) {
                 disabled={rec === "transcribing"}
                 title={
                   rec === "recording"
-                    ? "Parar"
+                    ? t("common.stop")
                     : rec === "transcribing"
-                      ? "Transcrevendo…"
-                      : "Falar"
+                      ? t("voice.transcribing")
+                      : t("voice.speak")
                 }
               >
                 {rec === "recording" ? (
@@ -135,13 +137,13 @@ export default function AgentDialog({ onSubmit, onCancel }) {
 
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onCancel}>
-            Cancelar
+            {t("common.cancel")}
           </button>
           <button className="btn-primary" onClick={run} disabled={!sel.length}>
-            Rodar
+            {t("agentDialog.run")}
           </button>
         </div>
-        <div className="modal-hint">⌘/Ctrl + Enter para rodar · Esc para cancelar</div>
+        <div className="modal-hint">{t("agentDialog.hint")}</div>
       </div>
     </div>,
     document.body,

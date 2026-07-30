@@ -6,17 +6,18 @@ import JarvisCore from "../components/JarvisCore";
 import VoiceCore from "../components/VoiceCore";
 import { habitsApi, notesApi } from "../lib/store";
 import { useAuth } from "../context/AuthContext";
+import { useLang } from "../context/LanguageContext";
 import { transcribe, generateNote } from "../lib/ai";
 import { setVoiceLevel, setVoiceActive } from "../lib/voiceLevel";
 import { triggerStarSpin } from "../lib/warp";
 import { setCoreSpin, setCoreCollapse } from "../lib/coreSpin";
 
-function greeting() {
+function greeting(t) {
   const h = new Date().getHours();
-  if (h < 6) return "Boa madrugada";
-  if (h < 12) return "Bom dia";
-  if (h < 18) return "Boa tarde";
-  return "Boa noite";
+  if (h < 6) return t("home.greetEarly");
+  if (h < 12) return t("home.greetMorning");
+  if (h < 18) return t("home.greetAfternoon");
+  return t("home.greetEvening");
 }
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -37,6 +38,7 @@ export default function Home({
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLang();
   const firstName = (
     user?.user_metadata?.name ||
     user?.email?.split("@")[0] ||
@@ -327,11 +329,11 @@ export default function Home({
     try {
       const blob = new Blob(chunks, { type: type || "audio/webm" });
       const text = await transcribe(blob);
-      if (!text) throw new Error("Não entendi o áudio. Tente falar de novo.");
+      if (!text) throw new Error(t("voice.notUnderstood"));
       const { content, title, emoji } = await generateNote(text, true);
       const note = await notesApi.create({
         content: content || text,
-        title: title || "Nota de voz",
+        title: title || t("home.voiceNote"),
         emoji: emoji || "🎙️",
       });
       onRefresh?.();
@@ -342,7 +344,7 @@ export default function Home({
       triggerStarSpin(); // giro lento das estrelas ao entrar na nova página
       navigate(`/note/${note.id}`);
     } catch (e) {
-      setVoiceErr(e.message || "Falha ao processar o áudio.");
+      setVoiceErr(e.message || t("home.audioProcessFail"));
       setRecState("idle");
       media.current = null;
       flyVoiceBack();
@@ -363,7 +365,7 @@ export default function Home({
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      setVoiceErr("Não consegui acessar o microfone.");
+      setVoiceErr(t("voice.micAccessFail"));
       setRecState("idle");
       flyVoiceBack();
       return;
@@ -517,14 +519,14 @@ export default function Home({
           <button
             className="orbit-icon"
             onClick={openMenu}
-            title="Hábitos de hoje"
+            title={t("home.todayHabits")}
           >
             <CalendarCheck size={20} />
           </button>
         ) : (
           <div className="orbit-menu">
             <button className="orbit-menu-head" onClick={closeMenu}>
-              <CalendarCheck size={15} /> Hoje
+              <CalendarCheck size={15} /> {t("home.today")}
             </button>
             <div className="orbit-habits">
               {habits.length ? (
@@ -539,7 +541,7 @@ export default function Home({
                   </label>
                 ))
               ) : (
-                <div className="orbit-empty">Nenhum hábito ainda.</div>
+                <div className="orbit-empty">{t("home.noHabits")}</div>
               )}
             </div>
           </div>
@@ -554,12 +556,12 @@ export default function Home({
           disabled={recState === "processing" || recState === "connecting"}
           title={
             recState === "recording"
-              ? "Toque para cancelar (para sozinho no silêncio)"
+              ? t("home.voiceRecording")
               : recState === "connecting"
-                ? "Conectando o microfone…"
+                ? t("home.voiceConnecting")
                 : recState === "processing"
-                  ? "Processando…"
-                  : "Falar para criar uma nota"
+                  ? t("home.voiceProcessing")
+                  : t("home.voiceIdle")
           }
         >
           {recState === "recording" ? (
@@ -575,7 +577,7 @@ export default function Home({
       {voiceErr && (
         <div className="voice-err">
           <span>{voiceErr}</span>
-          <button onClick={() => setVoiceErr("")} aria-label="Fechar">
+          <button onClick={() => setVoiceErr("")} aria-label={t("common.close")}>
             ×
           </button>
         </div>
@@ -583,21 +585,18 @@ export default function Home({
 
       <div className="home-overlay" ref={overlay}>
         <div className="home-hello">
-          {greeting()}
+          {greeting(t)}
           {firstName ? `, ${firstName}` : ""}
         </div>
         <h1 className="home-title glitch" data-text="NOVA">NOVA</h1>
-        <p className="home-sub">
-          Seu segundo cérebro. Capture ideias, organize notas e acompanhe seus
-          objetivos.
-        </p>
+        <p className="home-sub">{t("home.sub")}</p>
         <div className="home-actions">
           <button className="btn-neon clear" onClick={() => navigate("/goals")}>
-            <Target size={16} style={{ verticalAlign: "middle" }} /> Meus
-            objetivos
+            <Target size={16} style={{ verticalAlign: "middle" }} />{" "}
+            {t("home.myGoals")}
           </button>
           <button className="btn-neon outline" onClick={onNewNote}>
-            Nova nota{" "}
+            {t("nav.newNote")}{" "}
             <ArrowRight size={16} style={{ verticalAlign: "middle" }} />
           </button>
         </div>

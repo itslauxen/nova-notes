@@ -9,11 +9,13 @@ import { CSS } from '@dnd-kit/utilities'
 import { Home, Target, CalendarCheck, Settings, Plus, FileText, Trash2, Bot, Search, ChevronRight } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
 import PinwheelIcon from './PinwheelIcon'
+import { useLang } from '../context/LanguageContext'
 import { buildTree, flattenTree, removeChildrenOf, getProjection } from '../lib/tree'
 
 const INDENT = 18 // px de indentação por nível
 
 function NoteItem({ n, depth = 0, hasChildren = false, collapsed = false, onToggleCollapse, onAddChild, ghostDepth, onContextMenu, onDelete }) {
+  const { t } = useLang()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: n.id })
   const [dx, setDx] = useState(0)
   const [open, setOpen] = useState(false)
@@ -80,7 +82,7 @@ function NoteItem({ n, depth = 0, hasChildren = false, collapsed = false, onTogg
         <button
           className="nav-del"
           onClick={() => { setOpen(false); setDx(0); onDelete(n) }}
-          aria-label="Excluir nota"
+          aria-label={t('note.deleteNote')}
         >
           <Trash2 size={16} />
         </button>
@@ -100,7 +102,7 @@ function NoteItem({ n, depth = 0, hasChildren = false, collapsed = false, onTogg
         onTouchEnd={onTouchEnd}
       >
         <span className="emoji">{n.emoji || <FileText size={15} />}</span>
-        <span className="title">{n.title || 'Sem título'}</span>
+        <span className="title">{n.title || t('common.untitled')}</span>
         <span className="nav-actions">
           <button
             type="button"
@@ -108,7 +110,7 @@ function NoteItem({ n, depth = 0, hasChildren = false, collapsed = false, onTogg
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddChild?.(n.id) }}
             tabIndex={-1}
-            title="Adicionar subpágina"
+            title={t('sidebar.addSubpage')}
           >
             <Plus size={14} />
           </button>
@@ -119,7 +121,7 @@ function NoteItem({ n, depth = 0, hasChildren = false, collapsed = false, onTogg
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleCollapse?.(n.id) }}
               tabIndex={-1}
-              aria-label={collapsed ? 'Expandir' : 'Recolher'}
+              aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
             >
               <ChevronRight size={14} />
             </button>
@@ -131,6 +133,7 @@ function NoteItem({ n, depth = 0, hasChildren = false, collapsed = false, onTogg
 }
 
 export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNote, onMoveNotes, onAddSubpage, onSearch, open, onClose }) {
+  const { t } = useLang()
   const navigate = useNavigate()
   const [menu, setMenu] = useState(null) // { id, x, y }
   const [confirm, setConfirm] = useState(null) // { id, title }
@@ -220,24 +223,24 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
         </div>
 
         <button type="button" className="nav-item nav-search" onClick={onSearch}>
-          <Search size={17} /> <span className="title">Buscar</span>
+          <Search size={17} /> <span className="title">{t('nav.search')}</span>
           <span className="nav-kbd">⌘K</span>
         </button>
 
         <NavLink to="/" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')} end>
-          <Home size={17} /> <span className="title">Início</span>
+          <Home size={17} /> <span className="title">{t('nav.home')}</span>
         </NavLink>
         <NavLink to="/goals" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-          <Target size={17} /> <span className="title">Objetivos</span>
+          <Target size={17} /> <span className="title">{t('nav.goals')}</span>
         </NavLink>
         <NavLink to="/habits" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-          <CalendarCheck size={17} /> <span className="title">Hábitos</span>
+          <CalendarCheck size={17} /> <span className="title">{t('nav.habits')}</span>
         </NavLink>
         <NavLink to="/agents" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-          <Bot size={17} /> <span className="title">Agentes</span>
+          <Bot size={17} /> <span className="title">{t('nav.agents')}</span>
         </NavLink>
 
-        <div className="nav-section">Notas</div>
+        <div className="nav-section">{t('nav.notes')}</div>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -259,16 +262,16 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
                 onToggleCollapse={toggleCollapse}
                 onAddChild={addChild}
                 onContextMenu={openMenu}
-                onDelete={(note) => setConfirm({ id: note.id, title: note.title || 'Sem título' })}
+                onDelete={(note) => setConfirm({ id: note.id, title: note.title || t('common.untitled') })}
               />
             ))}
           </SortableContext>
         </DndContext>
-        <button className="add-btn" onClick={onNewNote}><Plus size={15} /> Nova nota</button>
+        <button className="add-btn" onClick={onNewNote}><Plus size={15} /> {t('nav.newNote')}</button>
 
         {sharedNotes.length > 0 && (
           <>
-            <div className="nav-section">Compartilhadas</div>
+            <div className="nav-section">{t('nav.shared')}</div>
             {sharedNotes.map((n) => (
               <NavLink
                 key={n.id}
@@ -276,7 +279,7 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
                 className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}
               >
                 <span className="emoji">{n.emoji || <FileText size={15} />}</span>
-                <span className="title">{n.title || 'Sem título'}</span>
+                <span className="title">{n.title || t('common.untitled')}</span>
               </NavLink>
             ))}
           </>
@@ -284,7 +287,7 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
 
         <div className="sidebar-footer">
           <NavLink to="/settings" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-            <Settings size={17} /> <span className="title">Configurações</span>
+            <Settings size={17} /> <span className="title">{t('nav.settings')}</span>
           </NavLink>
         </div>
       </aside>
@@ -295,10 +298,10 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
           <div className="card-menu" style={{ position: 'fixed', top: menu.y, left: menu.x, right: 'auto', zIndex: 120 }}>
             <button className="danger" onClick={() => {
               const n = notes.find((x) => x.id === menu.id)
-              setConfirm({ id: menu.id, title: n?.title || 'Sem título' })
+              setConfirm({ id: menu.id, title: n?.title || t('common.untitled') })
               setMenu(null)
             }}>
-              <Trash2 size={14} /> Excluir nota
+              <Trash2 size={14} /> {t('note.deleteNote')}
             </button>
           </div>
         </>,
@@ -307,8 +310,8 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
 
       {confirm && (
         <ConfirmDialog
-          title="Excluir nota"
-          message={`Tem certeza que deseja excluir "${confirm.title}"? Esta ação não pode ser desfeita.`}
+          title={t('note.deleteNote')}
+          message={t('note.deleteConfirm', { title: confirm.title })}
           onConfirm={() => { onDeleteNote?.(confirm.id); setConfirm(null) }}
           onCancel={() => setConfirm(null)}
         />

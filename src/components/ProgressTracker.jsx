@@ -1,11 +1,13 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
+import { useLang } from '../context/LanguageContext'
 
 // Nó customizado: grade de checkboxes (1 por dia) para acompanhar um
 // hábito/objetivo diário. Guarda quantos dias (count) e quais foram
 // marcados (done = string de 0/1). Conta para o progresso do objetivo.
 
 function TrackerView({ node, updateAttributes }) {
+  const { t } = useLang()
   const count = node.attrs.count || 7
   const doneStr = String(node.attrs.done || '').padEnd(count, '0').slice(0, count)
   const cells = doneStr.split('').map((c) => c === '1')
@@ -23,7 +25,7 @@ function TrackerView({ node, updateAttributes }) {
         <input
           className="tracker-label"
           value={node.attrs.label || ''}
-          placeholder="Hábito diário…"
+          placeholder={t('tracker.label')}
           onChange={(e) => updateAttributes({ label: e.target.value })}
         />
         <span className="tracker-count">{checked}/{count}</span>
@@ -35,7 +37,7 @@ function TrackerView({ node, updateAttributes }) {
             type="button"
             className={'tracker-cell' + (on ? ' on' : '')}
             onClick={() => toggle(i)}
-            title={`Dia ${i + 1}`}
+            title={t('tracker.day', { n: i + 1 })}
           >
             {i + 1}
           </button>

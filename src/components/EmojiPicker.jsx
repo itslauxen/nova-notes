@@ -1,18 +1,20 @@
 import { useEffect } from 'react'
+import { useLang } from '../context/LanguageContext'
 
 // Seletor de emojis simples (sem dependências). Clique escolhe; Esc/fora fecha.
 const GROUPS = [
-  { label: 'Frequentes', items: '📄 📝 ✅ ⭐ 🎯 🔥 💡 🚀 📌 ❤️ 🎵 💪 🧠 📚 ☕'.split(' ') },
-  { label: 'Rostos', items: '😀 😄 😁 😊 🙂 😉 😍 🤩 😎 🤔 😅 😌 😴 😭 😡 🥳 🤯 🙃 😬 🥺 😇 🤓'.split(' ') },
-  { label: 'Gestos & pessoas', items: '👍 👎 👏 🙏 💪 🦾 🫶 ✌️ 🤞 👀 🧘 🏃 🚶 🏋️ 🚴 🧗 💃'.split(' ') },
-  { label: 'Natureza', items: '🌟 ✨ ⚡ 🌈 💧 🌊 🌱 🌳 🍃 🍁 🍀 🌸 🌙 ☀️ ⛅ ❄️ 🪐 🌍 🐾 🦋'.split(' ') },
-  { label: 'Objetos', items: '📖 ✏️ 🖊️ 📒 📓 💻 📱 ⌚ 🎧 📷 🔑 🔒 💰 🛒 🎁 🏆 🥇 ⏰ ⏳ 📅 🗓️ 📊 📈 📉 💼 🎒 🩺 💊'.split(' ') },
-  { label: 'Comida', items: '🍎 🍌 🥦 🥗 🍳 🍞 ☕ 🍵 🍫 🍪 🥤 🍕 🍣 🥑'.split(' ') },
-  { label: 'Atividades', items: '⚽ 🏀 🎮 👾 🎸 🎹 🎨 ✈️ 🚗 🏠 🎬 🎤 🎲 🧩'.split(' ') },
-  { label: 'Símbolos', items: '❤️ 🧡 💛 💚 💙 💜 🖤 ✅ ❌ ⚠️ ❗ ❓ 💯 ➕ ➖ ☑️ 🔵 🟢 🟣 🔴'.split(' ') },
+  { labelKey: 'emoji.frequent', items: '📄 📝 ✅ ⭐ 🎯 🔥 💡 🚀 📌 ❤️ 🎵 💪 🧠 📚 ☕'.split(' ') },
+  { labelKey: 'emoji.faces', items: '😀 😄 😁 😊 🙂 😉 😍 🤩 😎 🤔 😅 😌 😴 😭 😡 🥳 🤯 🙃 😬 🥺 😇 🤓'.split(' ') },
+  { labelKey: 'emoji.gestures', items: '👍 👎 👏 🙏 💪 🦾 🫶 ✌️ 🤞 👀 🧘 🏃 🚶 🏋️ 🚴 🧗 💃'.split(' ') },
+  { labelKey: 'emoji.nature', items: '🌟 ✨ ⚡ 🌈 💧 🌊 🌱 🌳 🍃 🍁 🍀 🌸 🌙 ☀️ ⛅ ❄️ 🪐 🌍 🐾 🦋'.split(' ') },
+  { labelKey: 'emoji.objects', items: '📖 ✏️ 🖊️ 📒 📓 💻 📱 ⌚ 🎧 📷 🔑 🔒 💰 🛒 🎁 🏆 🥇 ⏰ ⏳ 📅 🗓️ 📊 📈 📉 💼 🎒 🩺 💊'.split(' ') },
+  { labelKey: 'emoji.food', items: '🍎 🍌 🥦 🥗 🍳 🍞 ☕ 🍵 🍫 🍪 🥤 🍕 🍣 🥑'.split(' ') },
+  { labelKey: 'emoji.activities', items: '⚽ 🏀 🎮 👾 🎸 🎹 🎨 ✈️ 🚗 🏠 🎬 🎤 🎲 🧩'.split(' ') },
+  { labelKey: 'emoji.symbols', items: '❤️ 🧡 💛 💚 💙 💜 🖤 ✅ ❌ ⚠️ ❗ ❓ 💯 ➕ ➖ ☑️ 🔵 🟢 🟣 🔴'.split(' ') },
 ]
 
 export default function EmojiPicker({ onPick, onClose }) {
+  const { t } = useLang()
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
@@ -24,11 +26,11 @@ export default function EmojiPicker({ onPick, onClose }) {
       <div className="emoji-backdrop" onClick={onClose} />
       <div className="emoji-picker">
         {GROUPS.map((g) => (
-          <div className="emoji-group" key={g.label}>
-            <div className="emoji-group-label">{g.label}</div>
+          <div className="emoji-group" key={g.labelKey}>
+            <div className="emoji-group-label">{t(g.labelKey)}</div>
             <div className="emoji-grid">
               {g.items.map((e, i) => (
-                <button key={g.label + i} className="emoji-opt" onClick={() => onPick(e)}>{e}</button>
+                <button key={g.labelKey + i} className="emoji-opt" onClick={() => onPick(e)}>{e}</button>
               ))}
             </div>
           </div>

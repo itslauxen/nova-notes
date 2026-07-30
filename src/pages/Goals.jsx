@@ -17,6 +17,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, Trash2, Check, Pencil, MoreVertical } from "lucide-react";
 import { notesApi } from "../lib/store";
+import { useLang } from "../context/LanguageContext";
 
 marked.setOptions({ breaks: true });
 const stop = (e) => e.stopPropagation();
@@ -31,6 +32,7 @@ function GoalCard({
   onToggleEdit,
   onOpen,
 }) {
+  const { t } = useLang();
   const {
     attributes,
     listeners,
@@ -58,12 +60,12 @@ function GoalCard({
       <div className="goal-top">
         <div className="goal-title">
           <span>{g.emoji || "🎯"}</span>
-          <span>{g.title || "Sem título"}</span>
+          <span>{g.title || t("common.untitled")}</span>
         </div>
         <div className="goal-actions" onClick={stop} onPointerDown={stop}>
           <button
             className="icon-btn"
-            title={g.done ? "Reabrir" : "Concluir"}
+            title={g.done ? t("goals.reopen") : t("goals.complete")}
             onClick={() =>
               onPatch(g.id, {
                 done: !g.done,
@@ -78,7 +80,7 @@ function GoalCard({
           </button>
           <button
             className="icon-btn"
-            title="Mais"
+            title={t("common.more")}
             onClick={() => onMenu(menuOpen ? null : g.id)}
           >
             <MoreVertical size={16} />
@@ -94,10 +96,10 @@ function GoalCard({
                   }}
                 >
                   <Pencil size={14} />{" "}
-                  {isEditing ? "Sair da edição" : "Editar descrição"}
+                  {isEditing ? t("goals.exitEdit") : t("goals.editDesc")}
                 </button>
                 <button className="danger" onClick={() => onUnmark(g.id)}>
-                  <Trash2 size={14} /> Remover dos objetivos
+                  <Trash2 size={14} /> {t("goals.removeFromGoals")}
                 </button>
               </div>
             </>
@@ -111,7 +113,7 @@ function GoalCard({
             className="field"
             rows={4}
             autoFocus
-            placeholder="Descreva o objetivo… (aceita Markdown)"
+            placeholder={t("goals.descPlaceholder")}
             value={g.content || ""}
             onClick={stop}
             onPointerDown={stop}
@@ -140,7 +142,7 @@ function GoalCard({
               onToggleEdit(null);
             }}
           >
-            Concluir edição
+            {t("goals.finishEditing")}
           </button>
         </>
       ) : (
@@ -152,11 +154,11 @@ function GoalCard({
             />
           ) : (
             <div className="goal-desc empty">
-              Sem descrição — use ⋮ → Editar descrição.
+              {t("goals.noDesc")}
             </div>
           )}
           <div className="goal-foot">
-            <div className="goal-meta">{g.progress || 0}% concluído</div>
+            <div className="goal-meta">{t("goals.percentDone", { n: g.progress || 0 })}</div>
             <div className="progress">
               <span style={{ width: `${g.progress || 0}%` }} />
             </div>
@@ -169,6 +171,7 @@ function GoalCard({
 
 export default function Goals() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -201,7 +204,7 @@ export default function Goals() {
     const note = await notesApi.create({
       is_goal: true,
       emoji: "🎯",
-      title: "Novo objetivo",
+      title: t("goals.newGoal"),
       position: goals.length,
     });
     navigate(`/note/${note.id}`);
@@ -241,13 +244,13 @@ export default function Goals() {
         }}
       >
         <div>
-          <div className="panel-title">Objetivos</div>
+          <div className="panel-title">{t("nav.goals")}</div>
           <div className="panel-sub">
-            Marque notas como objetivos para acompanhá-los aqui.
+            {t("goals.sub")}
           </div>
         </div>
         <button className="btn-primary" onClick={add}>
-          <Plus size={16} style={{ verticalAlign: "middle" }} /> Novo
+          <Plus size={16} style={{ verticalAlign: "middle" }} /> {t("common.new")}
         </button>
       </div>
 
@@ -256,17 +259,17 @@ export default function Goals() {
           className="card"
           style={{ borderColor: "var(--accent)", marginBottom: 18 }}
         >
-          <strong>Não consegui carregar os objetivos.</strong>
+          <strong>{t("goals.loadFail")}</strong>
           <p style={{ color: "var(--text-dim)", fontSize: 13, marginTop: 6 }}>
             {error}
           </p>
           <p
             style={{ color: "var(--text-faint)", fontSize: 12.5, marginTop: 8 }}
           >
-            Se você conectou o Supabase, confira se rodou o{" "}
-            <code>supabase_schema.sql</code> atualizado (colunas{" "}
+            {t("goals.errHint1")}{" "}
+            <code>supabase_schema.sql</code> {t("goals.errHint2")}{" "}
             <code>is_goal</code>, <code>progress</code>, <code>done</code>,{" "}
-            <code>position</code> na tabela <code>notes</code>).
+            <code>position</code> {t("goals.errHint3")} <code>notes</code>{t("goals.errHint4")}
           </p>
         </div>
       )}
@@ -291,7 +294,7 @@ export default function Goals() {
         </div>
       ) : error ? null : goals.length === 0 ? (
         <p style={{ color: "var(--text-dim)" }}>
-          Nenhum objetivo ainda. Crie um, ou marque uma nota como objetivo.
+          {t("goals.empty")}
         </p>
       ) : (
         <DndContext

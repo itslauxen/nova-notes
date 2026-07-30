@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
+import { useLang } from '../context/LanguageContext'
 import { FONTS, PRESET_COLORS } from '../theme/palette'
 import {
   getGeminiKey, setGeminiKey, getGroqKey, setGroqKey,
@@ -17,6 +18,7 @@ const PROVIDERS = [
 
 // Ativa/desativa push neste dispositivo (lembretes de nota + hábitos)
 function PushSettings() {
+  const { t } = useLang()
   const [status, setStatus] = useState('off')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -26,7 +28,7 @@ function PushSettings() {
   const enable = async () => {
     setBusy(true); setErr('')
     try { await enablePush(); await refresh() }
-    catch (e) { setErr(e.message || 'Falha ao ativar.') }
+    catch (e) { setErr(e.message || t('settings.pushFail')) }
     finally { setBusy(false) }
   }
   const disable = async () => {
@@ -37,29 +39,29 @@ function PushSettings() {
 
   return (
     <div className="settings-row">
-      <label>Notificações</label>
-      <span className="hint">Receba lembretes de notas e hábitos no horário, mesmo com o app fechado.</span>
+      <label>{t('settings.notifications')}</label>
+      <span className="hint">{t('settings.notifHint')}</span>
       {status === 'unsupported' && (
-        <div className="hint">Este navegador não suporta push (ou faltam as chaves VAPID no deploy).</div>
+        <div className="hint">{t('settings.pushUnsupported')}</div>
       )}
       {status === 'need-install' && (
-        <div className="push-warn">No iPhone, adicione o app à Tela de Início e abra pelo ícone pra poder ativar.</div>
+        <div className="push-warn">{t('settings.pushNeedInstall')}</div>
       )}
       {status === 'denied' && (
-        <div className="push-warn">Permissão bloqueada — habilite as notificações deste site nas configurações do navegador.</div>
+        <div className="push-warn">{t('settings.pushDenied')}</div>
       )}
       {(status === 'off' || status === 'enabled') && (
         <div className="chip-row" style={{ marginTop: 10, alignItems: 'center' }}>
           {status === 'enabled' ? (
             <>
-              <span className="push-ok"><Check size={13} /> Ativadas neste dispositivo</span>
+              <span className="push-ok"><Check size={13} /> {t('settings.pushEnabledOn')}</span>
               <button className="chip" onClick={disable} disabled={busy}>
-                <BellOff size={14} style={{ verticalAlign: 'middle' }} /> Desativar
+                <BellOff size={14} style={{ verticalAlign: 'middle' }} /> {t('settings.disable')}
               </button>
             </>
           ) : (
             <button className="btn-primary" onClick={enable} disabled={busy}>
-              <Bell size={14} style={{ verticalAlign: 'middle' }} /> {busy ? 'Ativando…' : 'Ativar notificações'}
+              <Bell size={14} style={{ verticalAlign: 'middle' }} /> {busy ? t('settings.enabling') : t('settings.enableNotifications')}
             </button>
           )}
         </div>
@@ -71,6 +73,7 @@ function PushSettings() {
 
 export default function Settings() {
   const { settings, setColor, setFont, setMode } = useTheme()
+  const { t, lang, setLang, langs } = useLang()
   const {
     user, signOut, updateName,
     updateGeminiKey, updateGroqKey, updateCerebrasKey, updateAiProvider,
@@ -126,39 +129,55 @@ export default function Settings() {
 
   return (
     <div className="panel" style={{ maxWidth: 720 }}>
-      <div className="panel-title">Configurações</div>
-      <div className="panel-sub">Deixe o NOVA com a sua cara. As mudanças são aplicadas e salvas na hora.</div>
+      <div className="panel-title">{t('settings.title')}</div>
+      <div className="panel-sub">{t('settings.sub')}</div>
 
       {user && (
         <div className="settings-row">
-          <label>Conta</label>
-          <span className="hint">Conectado como <strong>{user.email}</strong></span>
+          <label>{t('settings.account')}</label>
+          <span className="hint">{t('settings.connectedAs')} <strong>{user.email}</strong></span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', maxWidth: 360 }}>
             <input
               className="field"
               value={name}
-              placeholder="Seu nome"
+              placeholder={t('settings.yourName')}
               onChange={(e) => setName(e.target.value)}
               onBlur={saveName}
               onKeyDown={(e) => e.key === 'Enter' && saveName()}
             />
             <button className="btn-primary" onClick={saveName} disabled={nameStatus === 'saving'}>
-              {nameStatus === 'saved' ? <Check size={15} /> : 'Salvar'}
+              {nameStatus === 'saved' ? <Check size={15} /> : t('common.save')}
             </button>
           </div>
           <div className="chip-row" style={{ marginTop: 12 }}>
             <button className="chip" onClick={() => signOut()}>
-              <LogOut size={14} style={{ verticalAlign: 'middle' }} /> Sair
+              <LogOut size={14} style={{ verticalAlign: 'middle' }} /> {t('settings.signOut')}
             </button>
           </div>
         </div>
       )}
 
+      <div className="settings-row">
+        <label>{t('settings.language')}</label>
+        <span className="hint">{t('settings.languageHint')}</span>
+        <div className="chip-row">
+          {langs.map((l) => (
+            <button
+              key={l.id}
+              className={'chip' + (lang === l.id ? ' active' : '')}
+              onClick={() => setLang(l.id)}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <PushSettings />
 
       <div className="settings-row">
-        <label>Cor do tema</label>
-        <span className="hint">Escolha uma cor base — o app gera automaticamente as variações (mais claras e escuras) para fundo, bordas e destaques.</span>
+        <label>{t('settings.themeColor')}</label>
+        <span className="hint">{t('settings.themeColorHint')}</span>
         <div className="swatches">
           {PRESET_COLORS.map((c) => (
             <button
@@ -171,7 +190,7 @@ export default function Settings() {
           ))}
           <label
             className="swatch"
-            title="Cor personalizada"
+            title={t('settings.customColor')}
             style={{
               background: 'conic-gradient(red, orange, yellow, lime, cyan, blue, magenta, red)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
@@ -188,8 +207,8 @@ export default function Settings() {
       </div>
 
       <div className="settings-row">
-        <label>Tipografia</label>
-        <span className="hint">Três fontes selecionadas. Troque conforme seu gosto.</span>
+        <label>{t('settings.typography')}</label>
+        <span className="hint">{t('settings.typographyHint')}</span>
         <div className="chip-row">
           {FONTS.map((f) => (
             <button
@@ -205,23 +224,20 @@ export default function Settings() {
       </div>
 
       <div className="settings-row">
-        <label>Aparência</label>
+        <label>{t('settings.appearance')}</label>
         <div className="chip-row">
           <button className={'chip' + (settings.mode === 'dark' ? ' active' : '')} onClick={() => setMode('dark')}>
-            <Moon size={14} style={{ verticalAlign: 'middle' }} /> Escuro
+            <Moon size={14} style={{ verticalAlign: 'middle' }} /> {t('settings.dark')}
           </button>
           <button className={'chip' + (settings.mode === 'light' ? ' active' : '')} onClick={() => setMode('light')}>
-            <Sun size={14} style={{ verticalAlign: 'middle' }} /> Claro
+            <Sun size={14} style={{ verticalAlign: 'middle' }} /> {t('settings.light')}
           </button>
         </div>
       </div>
 
       <div className="settings-row">
-        <label><Sparkles size={14} style={{ verticalAlign: 'middle', color: 'var(--accent)' }} /> Modelo de IA</label>
-        <span className="hint">
-          Escolha qual provedor usar para gerar texto. Se ele atingir o limite, os outros entram como reserva
-          automaticamente. A transcrição de voz usa sempre o Groq.
-        </span>
+        <label><Sparkles size={14} style={{ verticalAlign: 'middle', color: 'var(--accent)' }} /> {t('settings.aiModel')}</label>
+        <span className="hint">{t('settings.aiModelHint')}</span>
         <div className="chip-row">
           {PROVIDERS.map((p) => (
             <button
@@ -244,10 +260,10 @@ export default function Settings() {
       <div className="ai-keys-inner">
 
       <div className="settings-row">
-        <label>Chave Groq</label>
+        <label>{t('settings.groqKey')}</label>
         <span className="hint">
-          Rápido e usado também para transcrever voz. Pegue grátis em{' '}
-          <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>. Fica salva só no seu navegador.
+          {t('settings.groqHint')}
+          <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>{t('settings.savedLocal')}
         </span>
         <div style={{ display: 'flex', gap: 8, maxWidth: 460 }}>
           <input
@@ -259,16 +275,16 @@ export default function Settings() {
             onKeyDown={(e) => e.key === 'Enter' && saveGroqKey()}
           />
           <button className="btn-primary" onClick={saveGroqKey}>
-            {groqStatus === 'saved' ? <Check size={15} /> : 'Salvar'}
+            {groqStatus === 'saved' ? <Check size={15} /> : t('common.save')}
           </button>
         </div>
       </div>
 
       <div className="settings-row">
-        <label>Chave Cerebras</label>
+        <label>{t('settings.cerebrasKey')}</label>
         <span className="hint">
-          Mais volume diário e ótimo para textos longos. Pegue grátis em{' '}
-          <a href="https://cloud.cerebras.ai" target="_blank" rel="noopener">cloud.cerebras.ai</a>. Fica salva só no seu navegador.
+          {t('settings.cerebrasHint')}
+          <a href="https://cloud.cerebras.ai" target="_blank" rel="noopener">cloud.cerebras.ai</a>{t('settings.savedLocal')}
         </span>
         <div style={{ display: 'flex', gap: 8, maxWidth: 460 }}>
           <input
@@ -280,16 +296,16 @@ export default function Settings() {
             onKeyDown={(e) => e.key === 'Enter' && saveCereKey()}
           />
           <button className="btn-primary" onClick={saveCereKey}>
-            {cereStatus === 'saved' ? <Check size={15} /> : 'Salvar'}
+            {cereStatus === 'saved' ? <Check size={15} /> : t('common.save')}
           </button>
         </div>
       </div>
 
       <div className="settings-row">
-        <label>Chave Gemini</label>
+        <label>{t('settings.geminiKey')}</label>
         <span className="hint">
-          Contexto gigante (1M tokens). Pegue grátis em{' '}
-          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Fica salva só no seu navegador.
+          {t('settings.geminiHint')}
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>{t('settings.savedLocal')}
         </span>
         <div style={{ display: 'flex', gap: 8, maxWidth: 460 }}>
           <input
@@ -301,7 +317,7 @@ export default function Settings() {
             onKeyDown={(e) => e.key === 'Enter' && saveGemKey()}
           />
           <button className="btn-primary" onClick={saveGemKey}>
-            {gemStatus === 'saved' ? <Check size={15} /> : 'Salvar'}
+            {gemStatus === 'saved' ? <Check size={15} /> : t('common.save')}
           </button>
         </div>
       </div>

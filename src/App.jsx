@@ -8,6 +8,7 @@ import Loader from './components/Loader'
 import CommandPalette from './components/CommandPalette'
 import Login from './components/Login'
 import { useAuth } from './context/AuthContext'
+import { useLang } from './context/LanguageContext'
 import Home from './pages/Home'
 import Goals from './pages/Goals'
 import Habits from './pages/Habits'
@@ -24,6 +25,7 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false)
   const [pendingVoice, setPendingVoice] = useState(false)
   const { loading: authLoading, needsAuth } = useAuth()
+  const { t } = useLang()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -118,7 +120,7 @@ export default function App() {
 
   // nota "fantasma" pra UI otimista (aparece na sidebar antes do banco responder)
   const optimisticNote = (id, extra = {}) => ({
-    id, title: 'Sem título', content: '', emoji: '📄', tags: [],
+    id, title: t('common.untitled'), content: '', emoji: '📄', tags: [],
     is_goal: false, is_agent: false, progress: 0, done: false, position: 0, parent_id: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...extra,
   })
@@ -129,23 +131,24 @@ export default function App() {
     try { await notesApi.create({ id }) } catch {}
     navigate(`/note/${id}`)
     refresh()
-  }, [navigate, refresh])
+  }, [navigate, refresh, t])
 
   // botão + do item da sidebar: cria subpágina aninhada e anexa um link "page"
   // no fim do conteúdo da nota-pai
   const handleAddSubpage = useCallback(async (parentId) => {
     const id = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now())
+    const subTitle = t('note.newSubpage')
     // aparece na sidebar já aninhada (feedback imediato -> evita clicar 2x)
-    setNotes((prev) => [...prev, optimisticNote(id, { parent_id: parentId, title: 'Nova subpágina' })])
+    setNotes((prev) => [...prev, optimisticNote(id, { parent_id: parentId, title: subTitle })])
     try {
-      await notesApi.create({ id, parent_id: parentId, title: 'Nova subpágina' })
+      await notesApi.create({ id, parent_id: parentId, title: subTitle })
       const parent = await notesApi.get(parentId)
       const base = (parent?.content || '').replace(/\s*$/, '')
-      await notesApi.update(parentId, { content: base + `\n\n[Nova subpágina](/note/${id})\n` })
+      await notesApi.update(parentId, { content: base + `\n\n[${subTitle}](/note/${id})\n` })
     } catch {}
     navigate(`/note/${id}`)
     refresh()
-  }, [navigate, refresh])
+  }, [navigate, refresh, t])
 
   const handleDeleted = useCallback(async () => {
     await refresh()
@@ -189,13 +192,13 @@ export default function App() {
     <div className="app">
       {booting && <Loader />}
       {cmdk && <CommandPalette notes={notes} onNewNote={handleNewNote} onClose={() => setCmdk(false)} />}
-      <button className="burger" onClick={() => setNavOpen(true)} aria-label="Abrir menu"><Menu size={26} /></button>
+      <button className="burger" onClick={() => setNavOpen(true)} aria-label={t('app.openMenu')}><Menu size={26} /></button>
       <Sidebar notes={sortedNotes} sharedNotes={sharedNotes} onNewNote={handleNewNote} onDeleteNote={handleDeleteNote} onMoveNotes={handleMoveNotes} onAddSubpage={handleAddSubpage} onSearch={() => setCmdk(true)} open={navOpen} onClose={() => setNavOpen(false)} />
       <div className="main">
         <Starfield />
         {!isSupabaseConfigured && (
           <div className="banner">
-            ⚡ Modo local ativo (dados no navegador). Configure o arquivo <code>.env</code> com seu Supabase para sincronizar na nuvem.
+            {t('app.localBannerPre')}<code>.env</code>{t('app.localBannerPost')}
           </div>
         )}
         <div className="page-enter" key={`page-${location.pathname}`}>

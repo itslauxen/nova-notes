@@ -3,11 +3,13 @@ import { createPortal } from "react-dom";
 import { Share2, X, Check } from "lucide-react";
 import { sharesApi, usersApi } from "../lib/store";
 import { isSupabaseConfigured } from "../lib/supabase";
+import { useLang } from "../context/LanguageContext";
 
 const isEmail = (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s);
 
 // Compartilha uma página/agente: autocomplete de usuários (nome + email).
 export default function ShareDialog({ noteId, title, onClose }) {
+  const { t } = useLang();
   const [users, setUsers] = useState([]);
   const [shares, setShares] = useState([]);
   const [query, setQuery] = useState("");
@@ -42,7 +44,7 @@ export default function ShareDialog({ noteId, title, onClose }) {
   const add = async (email) => {
     const e = (email || "").trim().toLowerCase();
     if (!isEmail(e)) {
-      setErr("Email inválido.");
+      setErr(t("share.invalidEmail"));
       return;
     }
     setErr("");
@@ -52,7 +54,7 @@ export default function ShareDialog({ noteId, title, onClose }) {
       await sharesApi.share(noteId, e);
       await loadShares();
     } catch (x) {
-      setErr(x.message || "Falha ao compartilhar.");
+      setErr(x.message || t("share.shareFail"));
     }
   };
 
@@ -65,17 +67,17 @@ export default function ShareDialog({ noteId, title, onClose }) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-title">
-          <Share2 size={17} style={{ verticalAlign: "middle", color: "var(--accent)" }} /> Compartilhar
+          <Share2 size={17} style={{ verticalAlign: "middle", color: "var(--accent)" }} /> {t("common.share")}
         </div>
 
         {!isSupabaseConfigured ? (
-          <div className="modal-msg">Compartilhamento só funciona com login na nuvem.</div>
+          <div className="modal-msg">{t("share.needCloud")}</div>
         ) : (
           <>
             <div className="share-ac">
               <input
                 className="field"
-                placeholder="Buscar por nome ou email…"
+                placeholder={t("share.searchPlaceholder")}
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
@@ -111,7 +113,7 @@ export default function ShareDialog({ noteId, title, onClose }) {
               )}
             </div>
             <div className="share-caption">
-              Quem receber poderá ver e editar {title || "esta página"}.
+              {t("share.caption", { what: title || t("share.thisPage") })}
             </div>
             {err && <div className="share-err">{err}</div>}
 
@@ -121,7 +123,7 @@ export default function ShareDialog({ noteId, title, onClose }) {
                   <div className="share-row" key={s.id}>
                     <span className="share-row-icon"><Check size={13} /></span>
                     <span>{s.shared_with_email}</span>
-                    <button onClick={() => remove(s.id)} title="Remover acesso">
+                    <button onClick={() => remove(s.id)} title={t("share.removeAccess")}>
                       <X size={14} />
                     </button>
                   </div>
@@ -133,7 +135,7 @@ export default function ShareDialog({ noteId, title, onClose }) {
 
         <div className="modal-actions">
           <button className="btn-primary" onClick={onClose}>
-            Fechar
+            {t("common.close")}
           </button>
         </div>
       </div>

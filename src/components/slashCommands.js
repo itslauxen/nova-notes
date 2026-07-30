@@ -3,45 +3,53 @@ import Suggestion from '@tiptap/suggestion'
 import { ReactRenderer } from '@tiptap/react'
 import SlashMenu from './SlashMenu'
 import { insertImageFiles } from './NovaImage'
+import { translate } from '../lib/i18n'
+
+// idioma salvo (lido fora de um componente React, p/ o window.prompt do marcador)
+const curLang = () => {
+  try { return localStorage.getItem('nova-lang') || 'pt' } catch { return 'pt' }
+}
 
 // Itens do menu "/". Cada um sabe como se transformar no bloco desejado.
+// title/subtitle são resolvidos por titleKey/subtitleKey no SlashMenu (i18n);
+// o `keywords` (não visível) alimenta a busca em PT e EN.
 const ITEMS = [
-  { title: 'Texto', subtitle: 'Parágrafo simples', icon: '¶', keywords: 'texto paragrafo p',
+  { title: 'Texto', titleKey: 'slash.text', subtitle: 'Parágrafo simples', subtitleKey: 'slash.textSub', icon: '¶', keywords: 'texto paragrafo p text paragraph',
     run: (c) => c.setParagraph().run() },
-  { title: 'Título 1', subtitle: 'Cabeçalho grande', icon: 'H₁', keywords: 'titulo heading h1',
+  { title: 'Título 1', titleKey: 'slash.h1', subtitle: 'Cabeçalho grande', subtitleKey: 'slash.h1Sub', icon: 'H₁', keywords: 'titulo heading h1 title',
     run: (c) => c.toggleHeading({ level: 1 }).run() },
-  { title: 'Título 2', subtitle: 'Cabeçalho médio', icon: 'H₂', keywords: 'titulo heading h2',
+  { title: 'Título 2', titleKey: 'slash.h2', subtitle: 'Cabeçalho médio', subtitleKey: 'slash.h2Sub', icon: 'H₂', keywords: 'titulo heading h2 title',
     run: (c) => c.toggleHeading({ level: 2 }).run() },
-  { title: 'Título 3', subtitle: 'Cabeçalho pequeno', icon: 'H₃', keywords: 'titulo heading h3',
+  { title: 'Título 3', titleKey: 'slash.h3', subtitle: 'Cabeçalho pequeno', subtitleKey: 'slash.h3Sub', icon: 'H₃', keywords: 'titulo heading h3 title',
     run: (c) => c.toggleHeading({ level: 3 }).run() },
-  { title: 'Lista', subtitle: 'Lista com marcadores', icon: '•', keywords: 'lista bullet ul',
+  { title: 'Lista', titleKey: 'slash.list', subtitle: 'Lista com marcadores', subtitleKey: 'slash.listSub', icon: '•', keywords: 'lista bullet ul list',
     run: (c) => c.toggleBulletList().run() },
-  { title: 'Lista numerada', subtitle: '1. 2. 3.', icon: '1.', keywords: 'lista numerada ordered ol',
+  { title: 'Lista numerada', titleKey: 'slash.numberedList', subtitle: '1. 2. 3.', subtitleKey: 'slash.numberedListSub', icon: '1.', keywords: 'lista numerada ordered ol numbered list',
     run: (c) => c.toggleOrderedList().run() },
-  { title: 'To-do', subtitle: 'Lista de tarefas', icon: '☑', keywords: 'todo tarefa checkbox task',
+  { title: 'To-do', titleKey: 'slash.todo', subtitle: 'Lista de tarefas', subtitleKey: 'slash.todoSub', icon: '☑', keywords: 'todo tarefa checkbox task',
     run: (c) => c.toggleTaskList().run() },
-  { title: 'Lembrete', subtitle: 'To-do que te notifica na hora certa', icon: '🔔',
-    keywords: 'lembrete reminder notificacao notificação alarme aviso push alerta',
+  { title: 'Lembrete', titleKey: 'slash.reminder', subtitle: 'To-do que te notifica na hora certa', subtitleKey: 'slash.reminderSub', icon: '🔔',
+    keywords: 'lembrete reminder notificacao notificação alarme aviso push alerta notification alert',
     run: (c) => {
       c.run() // apaga o "/lembrete"
       window.dispatchEvent(new CustomEvent('nova:add-reminder'))
     } },
-  { title: 'Página', subtitle: 'Cria uma subpágina aninhada aqui', icon: '📄',
-    keywords: 'pagina page subpagina subpage nota filho aninhar notion hierarquia',
+  { title: 'Página', titleKey: 'slash.page', subtitle: 'Cria uma subpágina aninhada aqui', subtitleKey: 'slash.pageSub', icon: '📄',
+    keywords: 'pagina page subpagina subpage nota filho aninhar notion hierarquia child nested',
     run: (c) => {
       c.run() // apaga o "/page"
       window.dispatchEvent(new CustomEvent('nova:add-subpage'))
     } },
-  { title: 'Citação', subtitle: 'Bloco de citação', icon: '❝', keywords: 'citacao quote blockquote',
+  { title: 'Citação', titleKey: 'slash.quote', subtitle: 'Bloco de citação', subtitleKey: 'slash.quoteSub', icon: '❝', keywords: 'citacao quote blockquote',
     run: (c) => c.toggleBlockquote().run() },
-  { title: 'Código', subtitle: 'Bloco de código', icon: '</>', keywords: 'codigo code pre',
+  { title: 'Código', titleKey: 'slash.code', subtitle: 'Bloco de código', subtitleKey: 'slash.codeSub', icon: '</>', keywords: 'codigo code pre',
     run: (c) => c.toggleCodeBlock().run() },
-  { title: 'Divisor', subtitle: 'Linha separadora', icon: '―', keywords: 'divisor linha hr separador',
+  { title: 'Divisor', titleKey: 'slash.divider', subtitle: 'Linha separadora', subtitleKey: 'slash.dividerSub', icon: '―', keywords: 'divisor linha hr separador divider separator',
     run: (c) => c.setHorizontalRule().run() },
-  { title: 'Tabela', subtitle: 'Tabela 3×3 com cabeçalho', icon: '▦', keywords: 'tabela table grade',
+  { title: 'Tabela', titleKey: 'slash.table', subtitle: 'Tabela 3×3 com cabeçalho', subtitleKey: 'slash.tableSub', icon: '▦', keywords: 'tabela table grade grid',
     run: (c) => c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
-  { title: 'Imagem', subtitle: 'Enviar uma imagem', icon: '🖼️',
-    keywords: 'imagem foto picture image upload anexar arquivo',
+  { title: 'Imagem', titleKey: 'slash.image', subtitle: 'Enviar uma imagem', subtitleKey: 'slash.imageSub', icon: '🖼️',
+    keywords: 'imagem foto picture image upload anexar arquivo photo file',
     run: (c, editor) => {
       c.run() // apaga o "/imagem"
       const input = document.createElement('input')
@@ -51,46 +59,46 @@ const ITEMS = [
       input.onchange = () => { if (input.files?.length) insertImageFiles(editor, input.files) }
       input.click()
     } },
-  { title: 'Toggle', subtitle: 'Bloco colapsável (título + conteúdo)', icon: '▸',
-    keywords: 'toggle colapsavel colapsável recolher expandir detalhes accordion dropdown',
+  { title: 'Toggle', titleKey: 'slash.toggle', subtitle: 'Bloco colapsável (título + conteúdo)', subtitleKey: 'slash.toggleSub', icon: '▸',
+    keywords: 'toggle colapsavel colapsável recolher expandir detalhes accordion dropdown collapsible',
     run: (c) =>
       c.insertContent({
         type: 'toggle',
         attrs: { open: true, title: '' },
         content: [{ type: 'paragraph' }],
       }).run() },
-  { title: 'Marcador de progresso', subtitle: 'Grade de dias p/ hábito diário', icon: '▣',
-    keywords: 'progresso habito dias tracker streak meta diaria checkbox',
+  { title: 'Marcador de progresso', titleKey: 'slash.tracker', subtitle: 'Grade de dias p/ hábito diário', subtitleKey: 'slash.trackerSub', icon: '▣',
+    keywords: 'progresso habito dias tracker streak meta diaria checkbox progress habit days',
     run: (c) => {
-      const n = parseInt(window.prompt('Quantos dias? (ex.: 7, 30, 90)', '7'), 10)
+      const n = parseInt(window.prompt(translate(curLang(), 'slash.trackerPrompt'), '7'), 10)
       if (!n || n < 1) return c.run()
       return c.insertContent({ type: 'progressTracker', attrs: { count: Math.min(n, 366), done: '', label: '' } }).run()
     } },
-  { title: 'Link', subtitle: 'URL ou outra nota', icon: '🔗', keywords: 'link url hyperlink nota',
+  { title: 'Link', titleKey: 'slash.link', subtitle: 'URL ou outra nota', subtitleKey: 'slash.linkSub', icon: '🔗', keywords: 'link url hyperlink nota note',
     run: (c) => {
       c.run() // remove o "/link"
       window.dispatchEvent(new CustomEvent('nova:add-link'))
     } },
-  { title: 'Gerar com IA', subtitle: 'Escreve com a IA', icon: '✨',
-    keywords: 'ia ai gerar escrever texto gemini groq cerebras',
+  { title: 'Gerar com IA', titleKey: 'slash.ai', subtitle: 'Escreve com a IA', subtitleKey: 'slash.aiSub', icon: '✨',
+    keywords: 'ia ai gerar escrever texto gemini groq cerebras generate write',
     run: (c) => {
       c.run()
       window.dispatchEvent(new CustomEvent('nova:ai-generate'))
     } },
-  { title: 'Gerar com voz', subtitle: 'Fale e a IA escreve', icon: '🎙️',
-    keywords: 'voz audio falar microfone ditar gravar transcrever',
+  { title: 'Gerar com voz', titleKey: 'slash.voice', subtitle: 'Fale e a IA escreve', subtitleKey: 'slash.voiceSub', icon: '🎙️',
+    keywords: 'voz audio falar microfone ditar gravar transcrever voice speak dictate record',
     run: (c) => {
       c.run()
       window.dispatchEvent(new CustomEvent('nova:ai-voice'))
     } },
-  { title: 'Refatorar', subtitle: 'Reescreve a nota com IA', icon: '↻',
-    keywords: 'refatorar reescrever mudar alterar melhorar resumir ia ai texto',
+  { title: 'Refatorar', titleKey: 'slash.refactor', subtitle: 'Reescreve a nota com IA', subtitleKey: 'slash.refactorSub', icon: '↻',
+    keywords: 'refatorar reescrever mudar alterar melhorar resumir ia ai texto refactor rewrite',
     run: (c) => {
       c.run()
       window.dispatchEvent(new CustomEvent('nova:ai-refactor'))
     } },
-  { title: 'Agente', subtitle: 'Roda um agente seu com uma instrução', icon: '🤖',
-    keywords: 'agente agent prompt ia ai assistente persona',
+  { title: 'Agente', titleKey: 'slash.agent', subtitle: 'Roda um agente seu com uma instrução', subtitleKey: 'slash.agentSub', icon: '🤖',
+    keywords: 'agente agent prompt ia ai assistente persona assistant',
     run: (c) => {
       c.run()
       window.dispatchEvent(new CustomEvent('nova:ai-agent'))

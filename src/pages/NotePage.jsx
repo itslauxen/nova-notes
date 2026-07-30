@@ -33,6 +33,7 @@ import { recordVoice } from "../lib/recorder";
 import { notesApi, remindersApi } from "../lib/store";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { isAncestor } from "../lib/tree";
+import { useLang } from "../context/LanguageContext";
 
 // 5 presets de tamanho de fonte (fator de escala)
 const FONT_SCALES = [0.85, 0.93, 1, 1.12, 1.28];
@@ -64,6 +65,7 @@ function countTasks(md) {
 export default function NotePage({ onChanged, onDeleted }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLang();
   const [note, setNote] = useState(null);
   const [allNotes, setAllNotes] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | saving | saved
@@ -286,7 +288,7 @@ export default function NotePage({ onChanged, onDeleted }) {
         patch.emoji = Array.from(emoji.trim())[0] || emoji.trim();
       if (Object.keys(patch).length) queueSave(patch);
     } catch (e) {
-      setAiError(e.message || "Falha ao gerar.");
+      setAiError(e.message || t("note.genFail"));
     } finally {
       setAiBusy(false);
     }
@@ -341,7 +343,7 @@ export default function NotePage({ onChanged, onDeleted }) {
         }
       }
     } catch (e) {
-      setAiError(e.message || "Falha ao refatorar.");
+      setAiError(e.message || t("note.refactorFail"));
     } finally {
       if (!silent) setAiBusy(false);
     }
@@ -378,7 +380,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       if (ed && content)
         ed.chain().focus().insertContent(marked.parse(content)).run();
     } catch (e) {
-      setAiError(e.message || "Falha ao rodar o agente.");
+      setAiError(e.message || t("note.agentFail"));
     } finally {
       setAiBusy(false);
     }
@@ -401,7 +403,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       blob = await r.promise;
     } catch {
       setRefRec("idle");
-      setAiError("Não consegui acessar o microfone.");
+      setAiError(t("voice.micAccessFail"));
       return;
     }
     setRefRec("transcribing");
@@ -410,7 +412,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       text = await transcribe(blob);
     } catch (e) {
       setRefRec("idle");
-      setAiError(e.message || "Falha ao transcrever.");
+      setAiError(e.message || t("note.transcribeFail"));
       return;
     }
     if (!text) {
@@ -447,14 +449,14 @@ export default function NotePage({ onChanged, onDeleted }) {
       blob = await rec.promise;
     } catch {
       setRecording(false);
-      setAiError("Não consegui acessar o microfone.");
+      setAiError(t("voice.micAccessFail"));
       return;
     }
     setRecording(false);
     setAiBusy(true);
     try {
       const text = await transcribe(blob);
-      if (!text) throw new Error("Não entendi o áudio. Tente de novo.");
+      if (!text) throw new Error(t("voice.notUnderstood"));
       // enquadra o ditado como pedido de nota, pra a IA aplicar as regras
       // de formatação do SYSTEM (checkboxes, tabelas, títulos…)
       const prompt =
@@ -470,7 +472,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       if (ed && content)
         ed.chain().focus().insertContent(marked.parse(content)).run();
     } catch (e) {
-      setAiError(e.message || "Falha ao gerar.");
+      setAiError(e.message || t("note.genFail"));
     } finally {
       setAiBusy(false);
     }
@@ -523,7 +525,7 @@ export default function NotePage({ onChanged, onDeleted }) {
     const rid = reminderCfg?.id;
     setReminderCfg(null);
     if (!rid) return;
-    const { next_fire_at, summary } = computeSchedule(cfg);
+    const { next_fire_at, summary } = computeSchedule(cfg, t);
     updateReminderNode(rid, {
       kind: cfg.kind,
       fireAt: cfg.fireAt || null,
@@ -557,7 +559,7 @@ export default function NotePage({ onChanged, onDeleted }) {
     if (!ed) return;
     let child;
     try {
-      child = await notesApi.create({ parent_id: id, title: "Nova subpágina" });
+      child = await notesApi.create({ parent_id: id, title: t("note.newSubpage") });
     } catch {
       return;
     }
@@ -753,10 +755,10 @@ export default function NotePage({ onChanged, onDeleted }) {
         <button
           className={"goal-toggle" + (note.is_goal ? " on" : "")}
           onClick={toggleGoal}
-          title="Marcar como objetivo"
+          title={t("note.markAsGoal")}
         >
           <Target size={15} />{" "}
-          {note.is_goal ? "Objetivo" : "Marcar como objetivo"}
+          {note.is_goal ? t("note.goal") : t("note.markAsGoal")}
         </button>
         {note.is_goal &&
           (() => {
@@ -765,7 +767,7 @@ export default function NotePage({ onChanged, onDeleted }) {
               return (
                 <div
                   className="head-progress"
-                  title="Calculado pelas tarefas marcadas"
+                  title={t("note.calcFromTasks")}
                 >
                   <div className="progress" style={{ width: 110 }}>
                     <span style={{ width: `${note.progress || 0}%` }} />
@@ -797,40 +799,40 @@ export default function NotePage({ onChanged, onDeleted }) {
           })()}
         {status === "saving" && (
           <span className="save-tag">
-            <Loader2 size={14} className="spin" /> salvando…
+            <Loader2 size={14} className="spin" /> {t("common.savingEllipsis")}
           </span>
         )}
         {status === "saved" && (
           <span className="save-tag" style={{ color: "var(--accent)" }}>
-            <Check size={14} /> salvo
+            <Check size={14} /> {t("common.saved")}
           </span>
         )}
         <div className="spacer" />
         <div className="head-actions">
           <button
             className="icon-btn head-full"
-            title="Compartilhar"
+            title={t("common.share")}
             onClick={() => setShareOpen(true)}
           >
             <Share2 size={18} />
           </button>
           <button
             className="icon-btn head-full"
-            title="Importar .md"
+            title={t("note.importMd")}
             onClick={() => fileInput.current?.click()}
           >
             <Upload size={18} />
           </button>
           <button
             className="icon-btn head-full"
-            title="Exportar .md"
+            title={t("note.exportMd")}
             onClick={exportMd}
           >
             <Download size={18} />
           </button>
           <button
             className="icon-btn head-full"
-            title="Excluir"
+            title={t("common.delete")}
             onClick={() => setConfirmOpen(true)}
           >
             <Trash2 size={18} />
@@ -838,7 +840,7 @@ export default function NotePage({ onChanged, onDeleted }) {
 
           <button
             className="icon-btn head-more"
-            title="Mais"
+            title={t("common.more")}
             onClick={openHeadMenu}
           >
             <MoreVertical size={18} />
@@ -859,7 +861,7 @@ export default function NotePage({ onChanged, onDeleted }) {
             <button
               className="emoji-input"
               onClick={() => setEmojiOpen((o) => !o)}
-              title="Escolher emoji"
+              title={t("note.pickEmoji")}
             >
               {note.emoji || "📄"}
             </button>
@@ -896,14 +898,14 @@ export default function NotePage({ onChanged, onDeleted }) {
             <button
               className="meta-btn"
               onClick={() => setTagAdding(true)}
-              title="Adicionar tag"
+              title={t("note.addTag")}
             >
               <Tag size={17} />
             </button>
             <button
               className={"meta-btn" + (readMode ? " active" : "")}
               onClick={toggleRead}
-              title="Modo leitura"
+              title={t("note.readMode")}
             >
               <BookOpen size={18} />
             </button>
@@ -914,7 +916,7 @@ export default function NotePage({ onChanged, onDeleted }) {
           className="title-input"
           contentEditable={!readMode}
           suppressContentEditableWarning
-          data-placeholder="Sem título"
+          data-placeholder={t("common.untitled")}
           onInput={(e) => queueSave({ title: e.currentTarget.textContent })}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === "ArrowDown") {
@@ -952,9 +954,9 @@ export default function NotePage({ onChanged, onDeleted }) {
               className="ai-listening"
               style={{ top: aiPos.top, left: aiPos.left }}
               onClick={() => voiceStopRef.current?.()}
-              title="Parar e gerar"
+              title={t("note.stopAndGenerate")}
             >
-              <span className="ai-listening-text">Ouvindo</span>
+              <span className="ai-listening-text">{t("note.listening")}</span>
               <span className="ai-listening-dot" />
             </button>
           )}
@@ -963,7 +965,7 @@ export default function NotePage({ onChanged, onDeleted }) {
               className="ai-generating"
               style={{ top: aiPos.top, left: aiPos.left }}
             >
-              <span className="ai-generating-text">Gerando</span>
+              <span className="ai-generating-text">{t("note.generating")}</span>
               <RingLoader color={accentColor()} size={20} />
             </div>
           )}
@@ -1006,10 +1008,10 @@ export default function NotePage({ onChanged, onDeleted }) {
             onPointerUp={onMicUp}
             title={
               refRec === "recording"
-                ? "Gravando — toque pra refatorar"
+                ? t("note.micRecording")
                 : refRec === "transcribing"
-                  ? "Transcrevendo…"
-                  : "Refatorar por voz (arraste pra mover)"
+                  ? t("note.micTranscribing")
+                  : t("note.micIdle")
             }
           >
             {refRec === "recording" ? (
@@ -1038,7 +1040,7 @@ export default function NotePage({ onChanged, onDeleted }) {
               }}
             >
               <div className="menu-fontsize">
-                <span>Fonte</span>
+                <span>{t("note.font")}</span>
                 <div className="fs-options">
                   {FONT_SCALES.map((s, i) => (
                     <button
@@ -1046,7 +1048,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                       className={i === fontIdx ? "active" : ""}
                       style={{ fontSize: 11 + i * 2.5 }}
                       onClick={() => setFontIdx(i)}
-                      title={`Tamanho ${i + 1}`}
+                      title={t("note.fontSize", { n: i + 1 })}
                     >
                       A
                     </button>
@@ -1059,7 +1061,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                   toggleRead();
                 }}
               >
-                <BookOpen size={14} /> Modo leitura{" "}
+                <BookOpen size={14} /> {t("note.readMode")}{" "}
                 {readMode && (
                   <Check
                     size={13}
@@ -1073,7 +1075,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                   toggleAllChecks();
                 }}
               >
-                <ListChecks size={14} /> Marcar/desmarcar todas
+                <ListChecks size={14} /> {t("note.toggleAllTasks")}
               </button>
               <button
                 onClick={() => {
@@ -1081,7 +1083,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                   setShareOpen(true);
                 }}
               >
-                <Share2 size={14} /> Compartilhar
+                <Share2 size={14} /> {t("common.share")}
               </button>
 
               <button
@@ -1090,7 +1092,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                   toggleGoal();
                 }}
               >
-                <Target size={14} /> Objetivo{" "}
+                <Target size={14} /> {t("note.goal")}{" "}
                 {note.is_goal && (
                   <Check
                     size={13}
@@ -1104,7 +1106,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                   fileInput.current?.click();
                 }}
               >
-                <Upload size={14} /> Importar .md
+                <Upload size={14} /> {t("note.importMd")}
               </button>
               <button
                 onClick={() => {
@@ -1112,7 +1114,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                   exportMd();
                 }}
               >
-                <Download size={14} /> Exportar .md
+                <Download size={14} /> {t("note.exportMd")}
               </button>
               <button
                 className="danger"
@@ -1121,7 +1123,7 @@ export default function NotePage({ onChanged, onDeleted }) {
                   setConfirmOpen(true);
                 }}
               >
-                <Trash2 size={14} /> Excluir
+                <Trash2 size={14} /> {t("common.delete")}
               </button>
             </div>
           </>,
@@ -1140,9 +1142,9 @@ export default function NotePage({ onChanged, onDeleted }) {
       )}
       {refactorOpen && (
         <AIDialog
-          title="Refatorar com IA"
-          message="Como quer mudar o texto da nota? A IA reescreve o conteúdo todo."
-          placeholder="Ex.: resuma em tópicos · deixe mais formal · vire um checklist"
+          title={t("note.refactorTitle")}
+          message={t("note.refactorMsg")}
+          placeholder={t("note.refactorPlaceholder")}
           hideMeta
           onSubmit={runRefactor}
           onCancel={() => setRefactorOpen(false)}
@@ -1174,8 +1176,8 @@ export default function NotePage({ onChanged, onDeleted }) {
       )}
       {confirmOpen && (
         <ConfirmDialog
-          title="Excluir nota"
-          message={`Tem certeza que deseja excluir "${note.title || "Sem título"}"? Esta ação não pode ser desfeita.`}
+          title={t("note.deleteNote")}
+          message={t("note.deleteConfirm", { title: note.title || t("common.untitled") })}
           onConfirm={confirmDelete}
           onCancel={() => setConfirmOpen(false)}
         />

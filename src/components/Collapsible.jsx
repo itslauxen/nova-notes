@@ -2,12 +2,14 @@ import { Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react'
 import { DOMSerializer } from '@tiptap/pm/model'
 import { ChevronRight } from 'lucide-react'
+import { useLang } from '../context/LanguageContext'
 
 // Bloco colapsável (toggle) estilo Notion: título (atributo) + corpo editável
 // (parágrafos, código, etc). Abre/fecha com animação. Corpo guarda a animação.
 const LEVEL_SCALE = [1, 1.6, 1.35, 1.15] // texto, h1, h2, h3
 
 function ToggleView({ node, updateAttributes, editor, getPos }) {
+  const { t } = useLang()
   const open = node.attrs.open
   const level = node.attrs.level || 0
   const toggle = () => updateAttributes({ open: !open })
@@ -38,7 +40,7 @@ function ToggleView({ node, updateAttributes, editor, getPos }) {
             e.stopPropagation()
             toggle()
           }}
-          aria-label={open ? 'Fechar' : 'Abrir'}
+          aria-label={open ? t('common.close') : t('common.open')}
         >
           <ChevronRight size={19} />
         </button>
@@ -49,7 +51,7 @@ function ToggleView({ node, updateAttributes, editor, getPos }) {
             fontWeight: level ? 700 : 600,
           }}
           value={node.attrs.title || ''}
-          placeholder="Título do toggle"
+          placeholder={t('toggle.titlePlaceholder')}
           onChange={(e) => onTitle(e.target.value)}
           onKeyDown={(e) => {
             // backspace no começo de um título com nível -> volta a texto normal

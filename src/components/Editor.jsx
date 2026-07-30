@@ -27,6 +27,7 @@ import { SmartDropcursor } from './SmartDropcursor'
 import { NovaImage } from './NovaImage'
 import { Reminder } from './Reminder'
 import BlockHandleMenu from './BlockHandleMenu'
+import { useLang } from '../context/LanguageContext'
 
 // Garante sempre um parágrafo vazio no fim do documento, pra dar pra clicar
 // abaixo de blocos (tabela, código, toggle…) e digitar uma nova linha.
@@ -98,6 +99,7 @@ const BlockSelectionHighlight = Extension.create({
 
 // Code block com botão de copiar (mantém o nome 'codeBlock' p/ serialização md)
 function CodeBlockView({ node }) {
+  const { t } = useLang()
   const [copied, setCopied] = useState(false)
   const copy = () => {
     try {
@@ -114,7 +116,7 @@ function CodeBlockView({ node }) {
         className="code-copy"
         contentEditable={false}
         onClick={copy}
-        title={copied ? 'Copiado' : 'Copiar'}
+        title={copied ? t('editor.copied') : t('editor.copy')}
       >
         {copied ? <Check size={14} /> : <Copy size={14} />}
       </button>
@@ -197,6 +199,7 @@ function ensureDragHandle() {
 
 // Menu flutuante ao selecionar texto: negrito, itálico, sublinhar e link.
 function BubbleToolbar({ editor }) {
+  const { t } = useLang()
   const [box, setBox] = useState(null)
   const [linkMode, setLinkMode] = useState(false)
   const [linkVal, setLinkVal] = useState('')
@@ -304,7 +307,7 @@ function BubbleToolbar({ editor }) {
         <input
           ref={inputRef}
           className="bubble-link"
-          placeholder="Cole o link e tecle Enter"
+          placeholder={t('editor.pasteLink')}
           value={linkVal}
           onChange={(e) => setLinkVal(e.target.value)}
           onMouseDown={(e) => e.stopPropagation()}
@@ -320,10 +323,10 @@ function BubbleToolbar({ editor }) {
         />
       ) : (
         <>
-          {btn(editor.isActive('bold'), () => editor.chain().focus().toggleBold().run(), <BoldIcon size={16} />, 'Negrito')}
-          {btn(editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), <ItalicIcon size={16} />, 'Itálico')}
-          {btn(editor.isActive('underline'), () => editor.chain().focus().toggleUnderline().run(), <UnderlineIcon size={16} />, 'Sublinhar')}
-          {btn(editor.isActive('link'), () => setLinkMode(true), <Link2 size={16} />, 'Link')}
+          {btn(editor.isActive('bold'), () => editor.chain().focus().toggleBold().run(), <BoldIcon size={16} />, t('editor.bold'))}
+          {btn(editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), <ItalicIcon size={16} />, t('editor.italic'))}
+          {btn(editor.isActive('underline'), () => editor.chain().focus().toggleUnderline().run(), <UnderlineIcon size={16} />, t('editor.underline'))}
+          {btn(editor.isActive('link'), () => setLinkMode(true), <Link2 size={16} />, t('editor.link'))}
         </>
       )}
     </div>,
@@ -335,6 +338,7 @@ function BubbleToolbar({ editor }) {
 // onChange recebe o conteúdo já convertido para markdown.
 // onEditor entrega a instância (para foco a partir do título, etc).
 export default function Editor({ content, onChange, onEditor, editable = true }) {
+  const { t } = useLang()
   const edRef = useRef(null)
   const editor = useEditor({
     editable,
@@ -350,7 +354,7 @@ export default function Editor({ content, onChange, onEditor, editable = true })
         includeChildren: true,
         placeholder: ({ node }) =>
           node.type.name === 'paragraph'
-            ? "Escreva algo, ou digite '/' para inserir blocos…"
+            ? t('editor.placeholder')
             : '',
       }),
       TaskList,

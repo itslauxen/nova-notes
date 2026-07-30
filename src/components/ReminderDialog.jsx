@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Bell } from 'lucide-react'
+import { useLang } from '../context/LanguageContext'
 
 // valor inicial pro input datetime-local: agora + 1h, no fuso local
 function defaultFireAt() {
@@ -11,6 +12,7 @@ function defaultFireAt() {
 }
 
 export default function ReminderDialog({ initial = {}, onSave, onCancel }) {
+  const { t } = useLang()
   const [kind, setKind] = useState(initial.kind || 'once')
   const [fireAt, setFireAt] = useState(initial.fireAt || defaultFireAt())
   const [time, setTime] = useState(initial.time || '09:00')
@@ -52,19 +54,19 @@ export default function ReminderDialog({ initial = {}, onSave, onCancel }) {
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-title">
-          <Bell size={17} style={{ verticalAlign: 'middle', color: 'var(--accent)' }} /> Quando notificar?
+          <Bell size={17} style={{ verticalAlign: 'middle', color: 'var(--accent)' }} /> {t('reminder.when')}
         </div>
 
         <div className="rem-tabs">
-          {tab('once', 'Uma vez')}
-          {tab('daily', 'Todo dia')}
-          {tab('interval', 'A cada X horas')}
+          {tab('once', t('reminder.once'))}
+          {tab('daily', t('reminder.daily'))}
+          {tab('interval', t('reminder.interval'))}
         </div>
 
         <div className="rem-body">
           {kind === 'once' && (
             <label className="rem-field">
-              <span>Data e hora</span>
+              <span>{t('reminder.dateTime')}</span>
               <input
                 type="datetime-local"
                 className="field"
@@ -75,13 +77,13 @@ export default function ReminderDialog({ initial = {}, onSave, onCancel }) {
           )}
           {kind === 'daily' && (
             <label className="rem-field">
-              <span>Horário (todos os dias)</span>
+              <span>{t('reminder.timeDaily')}</span>
               <input type="time" className="field" value={time} onChange={(e) => setTime(e.target.value)} />
             </label>
           )}
           {kind === 'interval' && (
             <label className="rem-field">
-              <span>A cada quantas horas (até marcar como concluído)</span>
+              <span>{t('reminder.everyHours')}</span>
               <input
                 type="number"
                 className="field"
@@ -95,10 +97,10 @@ export default function ReminderDialog({ initial = {}, onSave, onCancel }) {
         </div>
 
         <div className="modal-actions">
-          <button className="btn-ghost" onClick={onCancel}>Cancelar</button>
-          <button className="btn-primary" onClick={save}>Salvar</button>
+          <button className="btn-ghost" onClick={onCancel}>{t('common.cancel')}</button>
+          <button className="btn-primary" onClick={save}>{t('common.save')}</button>
         </div>
-        <div className="modal-hint">Enter para salvar · Esc para cancelar</div>
+        <div className="modal-hint">{t('reminder.hint')}</div>
       </div>
     </div>,
     document.body,

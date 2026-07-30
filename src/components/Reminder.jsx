@@ -2,6 +2,8 @@ import { Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from '@tiptap/react'
 import { DOMSerializer } from '@tiptap/pm/model'
 import { Bell } from 'lucide-react'
+import { useLang } from '../context/LanguageContext'
+import { translate } from '../lib/i18n'
 
 const esc = (s) =>
   String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -10,6 +12,7 @@ const esc = (s) =>
 // de notificação. O sino abre o modal de configuração. Marcar como concluído
 // interrompe os envios.
 function ReminderView({ node, updateAttributes }) {
+  const { t } = useLang()
   const { id, done, summary } = node.attrs
   const toggle = () => {
     const next = !done
@@ -37,7 +40,7 @@ function ReminderView({ node, updateAttributes }) {
         className="reminder-bell"
         contentEditable={false}
         onMouseDown={openConfig}
-        title={summary || 'Configurar lembrete'}
+        title={summary || t('reminder.configure')}
       >
         <Bell size={14} />
         {summary ? <span className="reminder-sum">{summary}</span> : null}
@@ -153,14 +156,17 @@ export const Reminder = Node.create({
   },
 })
 
-// calcula o próximo disparo (UTC, ISO) e um resumo legível a partir da config
-export function computeSchedule(cfg) {
+// calcula o próximo disparo (UTC, ISO) e um resumo legível a partir da config.
+// recebe `t` (do componente) para o resumo; cai no PT se não vier.
+export function computeSchedule(cfg, t) {
+  const tr = t || ((k, v) => translate('pt', k, v))
   const pad = (n) => String(n).padStart(2, '0')
   if (cfg.kind === 'once' && cfg.fireAt) {
     const d = new Date(cfg.fireAt) // datetime-local (horário local)
+    const when = `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
     return {
       next_fire_at: d.toISOString(),
-      summary: `Uma vez · ${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      summary: tr('reminder.sumOnce', { when }),
     }
   }
   if (cfg.kind === 'daily' && cfg.time) {
@@ -168,11 +174,11 @@ export function computeSchedule(cfg) {
     const d = new Date()
     d.setHours(h, m, 0, 0)
     if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1)
-    return { next_fire_at: d.toISOString(), summary: `Todo dia · ${cfg.time}` }
+    return { next_fire_at: d.toISOString(), summary: tr('reminder.sumDaily', { time: cfg.time }) }
   }
   if (cfg.kind === 'interval' && cfg.intervalHours) {
     const d = new Date(Date.now() + cfg.intervalHours * 3600 * 1000)
-    return { next_fire_at: d.toISOString(), summary: `A cada ${cfg.intervalHours}h até concluir` }
+    return { next_fire_at: d.toISOString(), summary: tr('reminder.sumInterval', { hours: cfg.intervalHours }) }
   }
   return { next_fire_at: null, summary: '' }
 }

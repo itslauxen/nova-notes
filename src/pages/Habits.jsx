@@ -10,10 +10,9 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { Plus, ChevronLeft, ChevronRight, MoreVertical, Trash2, Pencil, Link2, ExternalLink, GripVertical, Bell } from 'lucide-react'
 import { habitsApi, notesApi } from '../lib/store'
+import { useLang } from '../context/LanguageContext'
 import EmojiPicker from '../components/EmojiPicker'
 
-const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-const WD = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
 const stop = (e) => e.stopPropagation()
 
 const pad = (n) => String(n).padStart(2, '0')
@@ -49,6 +48,7 @@ function monthDone(log, y, m) {
 }
 
 function HabitRow({ h, days, y, m, isThisMonth, today, onToggle, onOpenNote, onMenu }) {
+  const { t } = useLang()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: h.id })
   const style = { transform: CSS.Transform.toString(transform), transition, position: isDragging ? 'relative' : undefined, zIndex: isDragging ? 30 : undefined }
   const log = h.log || {}
@@ -59,14 +59,14 @@ function HabitRow({ h, days, y, m, isThisMonth, today, onToggle, onOpenNote, onM
     <tr ref={setNodeRef} style={style} className={isDragging ? 'row-dragging' : ''}>
       <td className="habit-name-col">
         <div className="habit-name-wrap">
-          <button className="reorder-handle" title="Arraste para reordenar" {...attributes} {...listeners}><GripVertical size={15} /></button>
-          <button className="habit-name" onClick={() => onOpenNote(h)} title={h.note_id ? 'Abrir nota vinculada' : ''}>
+          <button className="reorder-handle" title={t('habits.dragReorder')} {...attributes} {...listeners}><GripVertical size={15} /></button>
+          <button className="habit-name" onClick={() => onOpenNote(h)} title={h.note_id ? t('habits.openLinkedNote') : ''}>
             <span>{h.emoji || '✅'}</span>
             <span className="hn-text">{h.name}</span>
             {h.note_id && <ExternalLink size={13} className="hn-link" />}
           </button>
           <div className="habit-name-actions">
-            {h.notify && <Bell size={14} className="hn-bell" title={`Notifica às ${h.notify_time || '09:00'}`} />}
+            {h.notify && <Bell size={14} className="hn-bell" title={t('habits.notifiesAt', { time: h.notify_time || '09:00' })} />}
             <button className="icon-btn sm" onClick={(e) => onMenu(h.id, e)}><MoreVertical size={16} /></button>
           </div>
         </div>
@@ -82,6 +82,9 @@ function HabitRow({ h, days, y, m, isThisMonth, today, onToggle, onOpenNote, onM
 
 export default function Habits() {
   const navigate = useNavigate()
+  const { t } = useLang()
+  const MONTHS = t('habits.months').split(',')
+  const WD = t('habits.weekdays').split(',')
   const [habits, setHabits] = useState([])
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -165,7 +168,7 @@ export default function Habits() {
 
   if (loading) return (
     <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="inline-loader" style={{ padding: 0 }}><div className="ring" /><span>carregando</span></div>
+      <div className="inline-loader" style={{ padding: 0 }}><div className="ring" /><span>{t('common.loading')}</span></div>
     </div>
   )
 
@@ -176,8 +179,8 @@ export default function Habits() {
     <div className="panel">
       <div className="habits-head">
         <div>
-          <div className="panel-title">Hábitos</div>
-          <div className="panel-sub">Acompanhe seus hábitos do mês.</div>
+          <div className="panel-title">{t('nav.habits')}</div>
+          <div className="panel-sub">{t('habits.sub')}</div>
         </div>
         <div className="habits-actions">
           <div className="month-nav">
@@ -185,35 +188,35 @@ export default function Habits() {
             <span>{MONTHS[ref.m]} {ref.y}</span>
             <button className="icon-btn" onClick={() => move(1)}><ChevronRight size={18} /></button>
           </div>
-          <button className="btn-primary" onClick={add}><Plus size={16} style={{ verticalAlign: 'middle' }} /> Hábito</button>
+          <button className="btn-primary" onClick={add}><Plus size={16} style={{ verticalAlign: 'middle' }} /> {t('habits.habit')}</button>
         </div>
       </div>
 
       {error && (
         <div className="card" style={{ borderColor: 'var(--accent)', margin: '8px 0 18px' }}>
-          <strong>Não consegui carregar os hábitos.</strong>
+          <strong>{t('habits.loadFail')}</strong>
           <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 6 }}>{error}</p>
           <p style={{ color: 'var(--text-faint)', fontSize: 12.5, marginTop: 8 }}>
-            Rode o <code>supabase_schema.sql</code> atualizado (ele cria a tabela <code>habits</code>).
+            {t('habits.errHint1')} <code>supabase_schema.sql</code> {t('habits.errHint2')} <code>habits</code>{t('habits.errHint3')}
           </p>
         </div>
       )}
 
       {habits.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>Nenhum hábito ainda. Clique em “Hábito” para criar o primeiro.</p>
+        <p style={{ color: 'var(--text-dim)' }}>{t('habits.empty')}</p>
       ) : (
         <div className="habit-table-wrap fade-in" ref={tableRef}>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <table className="habit-table">
               <thead>
                 <tr>
-                  <th className="habit-name-col">Atividade</th>
+                  <th className="habit-name-col">{t('habits.activity')}</th>
                   {days.map((d) => {
                     const wd = new Date(ref.y, ref.m, d).getDay()
                     const isToday = isThisMonth && d === today.getDate()
                     return <th key={d} className={'day-col' + (isToday ? ' today' : '')}><span className="wd">{WD[wd]}</span><span className="dn">{d}</span></th>
                   })}
-                  <th className="pct-col">Mês</th>
+                  <th className="pct-col">{t('habits.month')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,9 +236,9 @@ export default function Habits() {
         <>
           <div className="menu-backdrop" onClick={() => setMenu(null)} />
           <div className="card-menu" style={{ position: 'fixed', top: menu.top, left: menu.left, right: 'auto', zIndex: 120 }}>
-            <button onClick={() => { setEditing(menuHabit.id); setMenu(null) }}><Pencil size={14} /> Editar</button>
-            <button onClick={() => { setFocus(menuHabit.id); setMenu(null) }}><Link2 size={14} /> Ver isolado</button>
-            <button className="danger" onClick={() => remove(menuHabit.id)}><Trash2 size={14} /> Excluir</button>
+            <button onClick={() => { setEditing(menuHabit.id); setMenu(null) }}><Pencil size={14} /> {t('common.edit')}</button>
+            <button onClick={() => { setFocus(menuHabit.id); setMenu(null) }}><Link2 size={14} /> {t('habits.viewIsolated')}</button>
+            <button className="danger" onClick={() => remove(menuHabit.id)}><Trash2 size={14} /> {t('common.delete')}</button>
           </div>
         </>,
         document.body,
@@ -246,7 +249,7 @@ export default function Habits() {
         if (!h) return null
         return (
           <div className="card" style={{ marginTop: 16, maxWidth: 460, position: 'relative', zIndex: 30 }}>
-            <div style={{ fontWeight: 600, marginBottom: 12 }}>Editar hábito</div>
+            <div style={{ fontWeight: 600, marginBottom: 12 }}>{t('habits.editHabit')}</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'stretch' }}>
               <div className="emoji-wrap">
                 <button
@@ -263,18 +266,18 @@ export default function Habits() {
                   />
                 )}
               </div>
-              <input className="field" value={h.name} onChange={(e) => patch(h.id, { name: e.target.value })} placeholder="Nome do hábito" />
+              <input className="field" value={h.name} onChange={(e) => patch(h.id, { name: e.target.value })} placeholder={t('habits.habitName')} />
             </div>
-            <label style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>Vincular a uma nota</label>
+            <label style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{t('habits.linkNote')}</label>
             <select className="field" style={{ marginTop: 6 }} value={h.note_id || ''} onChange={(e) => patch(h.id, { note_id: e.target.value || null })}>
-              <option value="">— Nenhuma —</option>
-              {notes.map((nt) => <option key={nt.id} value={nt.id}>{nt.emoji} {nt.title || 'Sem título'}</option>)}
+              <option value="">{t('habits.none')}</option>
+              {notes.map((nt) => <option key={nt.id} value={nt.id}>{nt.emoji} {nt.title || t('common.untitled')}</option>)}
             </select>
 
             <div className="habit-notify">
               <label className="hn-toggle">
                 <input type="checkbox" checked={!!h.notify} onChange={(e) => setNotify(h, e.target.checked)} />
-                <span>Notificar todo dia</span>
+                <span>{t('habits.notifyDaily')}</span>
               </label>
               {h.notify && (
                 <input
@@ -286,10 +289,10 @@ export default function Habits() {
               )}
             </div>
             {h.notify && (
-              <div className="hn-hint">Ative as notificações em Configurações pra receber no horário.</div>
+              <div className="hn-hint">{t('habits.notifyHint')}</div>
             )}
 
-            <button className="btn-text" style={{ marginTop: 12 }} onClick={() => setEditing(null)}>Concluir</button>
+            <button className="btn-text" style={{ marginTop: 12 }} onClick={() => setEditing(null)}>{t('common.finish')}</button>
           </div>
         )
       })()}
@@ -297,9 +300,9 @@ export default function Habits() {
       {habits.length > 0 && (
         <div className="fade-in" style={{ marginTop: 34 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <div className="panel-title" style={{ fontSize: 19 }}>Métricas do mês</div>
+            <div className="panel-title" style={{ fontSize: 19 }}>{t('habits.monthMetrics')}</div>
             <div className="seg">
-              <button className={'seg-btn' + (focus === 'all' ? ' on' : '')} onClick={() => setFocus('all')}>Todos</button>
+              <button className={'seg-btn' + (focus === 'all' ? ' on' : '')} onClick={() => setFocus('all')}>{t('common.all')}</button>
               {habits.map((h) => (
                 <button key={h.id} className={'seg-btn' + (focus === h.id ? ' on' : '')} onClick={() => setFocus(h.id)}>{h.emoji} {h.name}</button>
               ))}
@@ -313,11 +316,12 @@ export default function Habits() {
 }
 
 function AllMetrics({ habits, y, m, days }) {
+  const { t } = useLang()
   const n = days.length
   return (
     <div className="metrics">
       <div className="card">
-        <div className="metric-title">Conclusão por hábito</div>
+        <div className="metric-title">{t('habits.completionPerHabit')}</div>
         {habits.map((h) => {
           const pct = Math.round((monthDone(h.log || {}, y, m) / n) * 100)
           return (
@@ -330,13 +334,13 @@ function AllMetrics({ habits, y, m, days }) {
         })}
       </div>
       <div className="card">
-        <div className="metric-title">Atividade por dia</div>
+        <div className="metric-title">{t('habits.activityPerDay')}</div>
         <div className="day-bars">
           {days.map((d) => {
             const total = habits.length || 1
             const c = habits.filter((h) => (h.log || {})[keyOf(y, m, d)]).length
             const pct = Math.round((c / total) * 100)
-            return <div key={d} className="day-bar-wrap" title={`Dia ${d}: ${c}/${habits.length}`}><div className="day-bar" style={{ height: `${Math.max(4, pct)}%` }} /></div>
+            return <div key={d} className="day-bar-wrap" title={t('habits.dayTip', { d, c, total: habits.length })}><div className="day-bar" style={{ height: `${Math.max(4, pct)}%` }} /></div>
           })}
         </div>
         <div className="day-bars-axis"><span>1</span><span>{n}</span></div>
@@ -346,6 +350,8 @@ function AllMetrics({ habits, y, m, days }) {
 }
 
 function HabitMetrics({ habit, y, m, days }) {
+  const { t } = useLang()
+  const WD = t('habits.weekdays').split(',')
   if (!habit) return null
   const log = habit.log || {}
   const n = days.length
@@ -356,7 +362,7 @@ function HabitMetrics({ habit, y, m, days }) {
   return (
     <div className="metrics">
       <div className="card">
-        <div className="metric-title">{habit.emoji} {habit.name} — calendário</div>
+        <div className="metric-title">{habit.emoji} {habit.name} — {t('habits.calendarWord')}</div>
         <div className="cal-grid">
           {WD.map((w, i) => <div key={'h' + i} className="cal-wd">{w}</div>)}
           {Array.from({ length: firstWd }).map((_, i) => <div key={'e' + i} />)}
@@ -367,10 +373,10 @@ function HabitMetrics({ habit, y, m, days }) {
         </div>
       </div>
       <div className="card stat-card">
-        <div className="metric-title">Resumo</div>
-        <div className="stat"><span className="stat-num">{pct}%</span><span className="stat-lbl">do mês ({done}/{n} dias)</span></div>
-        <div className="stat"><span className="stat-num">{current}</span><span className="stat-lbl">sequência atual</span></div>
-        <div className="stat"><span className="stat-num">{best}</span><span className="stat-lbl">melhor sequência</span></div>
+        <div className="metric-title">{t('habits.summary')}</div>
+        <div className="stat"><span className="stat-num">{pct}%</span><span className="stat-lbl">{t('habits.ofMonth', { done, n })}</span></div>
+        <div className="stat"><span className="stat-num">{current}</span><span className="stat-lbl">{t('habits.currentStreak')}</span></div>
+        <div className="stat"><span className="stat-num">{best}</span><span className="stat-lbl">{t('habits.bestStreak')}</span></div>
       </div>
     </div>
   )

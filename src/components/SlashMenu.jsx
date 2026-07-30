@@ -1,7 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { useLang } from '../context/LanguageContext'
 
 // Menu que aparece ao digitar "/" — navegável por teclado e mouse.
 const SlashMenu = forwardRef(function SlashMenu({ items, command }, ref) {
+  const { t } = useLang()
   const [sel, setSel] = useState(0)
   useEffect(() => setSel(0), [items])
 
@@ -28,7 +30,7 @@ const SlashMenu = forwardRef(function SlashMenu({ items, command }, ref) {
     },
   }))
 
-  if (!items.length) return <div className="slash-menu"><div className="slash-empty">Nada encontrado</div></div>
+  if (!items.length) return <div className="slash-menu"><div className="slash-empty">{t('common.nothingFound')}</div></div>
 
   return (
     <div className="slash-menu">
@@ -41,8 +43,8 @@ const SlashMenu = forwardRef(function SlashMenu({ items, command }, ref) {
         >
           <span className="slash-ico">{it.icon}</span>
           <span className="slash-text">
-            <span className="slash-t">{it.title}</span>
-            <span className="slash-s">{it.subtitle}</span>
+            <span className="slash-t">{it.titleKey ? t(it.titleKey) : it.title}</span>
+            <span className="slash-s">{it.subtitleKey ? t(it.subtitleKey) : it.subtitle}</span>
           </span>
         </button>
       ))}

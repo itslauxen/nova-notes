@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, FileText, Home, Target, CalendarCheck, Settings, Plus } from 'lucide-react'
+import { useLang } from '../context/LanguageContext'
 
 // Paleta de comandos (Ctrl/Cmd+K): busca em notas (título/conteúdo/tags)
 // e ações rápidas de navegação. Teclado: ↑ ↓ navegam, Enter executa, Esc fecha.
 export default function CommandPalette({ notes, onNewNote, onClose }) {
   const navigate = useNavigate()
+  const { t } = useLang()
   const [q, setQ] = useState('')
   const [sel, setSel] = useState(0)
   const inputRef = useRef(null)
@@ -14,11 +16,11 @@ export default function CommandPalette({ notes, onNewNote, onClose }) {
 
   const go = (path) => { onClose(); navigate(path) }
   const actions = [
-    { id: 'new', label: 'Nova nota', icon: <Plus size={16} />, run: () => { onClose(); onNewNote() } },
-    { id: 'home', label: 'Início', icon: <Home size={16} />, run: () => go('/') },
-    { id: 'goals', label: 'Objetivos', icon: <Target size={16} />, run: () => go('/goals') },
-    { id: 'habits', label: 'Hábitos', icon: <CalendarCheck size={16} />, run: () => go('/habits') },
-    { id: 'settings', label: 'Configurações', icon: <Settings size={16} />, run: () => go('/settings') },
+    { id: 'new', label: t('nav.newNote'), icon: <Plus size={16} />, run: () => { onClose(); onNewNote() } },
+    { id: 'home', label: t('nav.home'), icon: <Home size={16} />, run: () => go('/') },
+    { id: 'goals', label: t('nav.goals'), icon: <Target size={16} />, run: () => go('/goals') },
+    { id: 'habits', label: t('nav.habits'), icon: <CalendarCheck size={16} />, run: () => go('/habits') },
+    { id: 'settings', label: t('nav.settings'), icon: <Settings size={16} />, run: () => go('/settings') },
   ]
 
   const s = q.toLowerCase().trim()
@@ -35,7 +37,7 @@ export default function CommandPalette({ notes, onNewNote, onClose }) {
   const items = [
     ...acts.map((a) => ({ type: 'action', key: 'a' + a.id, label: a.label, icon: a.icon, run: a.run })),
     ...noteHits.map((n) => ({
-      type: 'note', key: 'n' + n.id, label: n.title || 'Sem título', emoji: n.emoji, tags: n.tags,
+      type: 'note', key: 'n' + n.id, label: n.title || t('common.untitled'), emoji: n.emoji, tags: n.tags,
       run: () => go(`/note/${n.id}`),
     })),
   ]
@@ -54,11 +56,11 @@ export default function CommandPalette({ notes, onNewNote, onClose }) {
       <div className="cmdk" onClick={(e) => e.stopPropagation()} onKeyDown={onKey}>
         <div className="cmdk-input">
           <Search size={17} />
-          <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar notas ou comandos…" />
+          <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('cmdk.placeholder')} />
           <kbd>esc</kbd>
         </div>
         <div className="cmdk-list">
-          {items.length === 0 && <div className="cmdk-empty">Nada encontrado</div>}
+          {items.length === 0 && <div className="cmdk-empty">{t('common.nothingFound')}</div>}
           {items.map((it, i) => (
             <button
               key={it.key}
