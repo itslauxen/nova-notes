@@ -2,7 +2,7 @@
 
 A **personal productivity** web app (notes, goals and habits) with a spacey HUD aesthetic, multi-user and real-time in the cloud. Built from scratch in React, with a Notion-style editor, integrated AI, voice control, 3D canvas animations and a serverless Supabase backend.
 
-🔗 **Live demo:** https://novanotes.lauxen.dev
+🔗 **Try it live:** https://novanotes.lauxen.dev
 
 ![NOVA — notes, goals and habits](docs/demo.gif)
 
