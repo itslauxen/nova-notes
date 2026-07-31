@@ -4,6 +4,8 @@ A **personal productivity** web app (notes, goals and habits) with a spacey HUD 
 
 🔗 **Live demo:** https://novanotes.lauxen.dev
 
+![NOVA — notes, goals and habits](docs/demo.gif)
+
 ---
 
 ## ✨ Features
