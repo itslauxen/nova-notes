@@ -155,6 +155,7 @@ src/
     Home, Goals, Habits, Agents, NotePage, Settings
 supabase_schema.sql         schema + multi-user RLS + storage
 supabase/functions/         Edge Functions (send-reminders)
+mcp/                        MCP server — lets Claude create/edit pages (see mcp/README.md)
 vercel.json                 SPA rewrites
 ```
 
