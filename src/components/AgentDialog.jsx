@@ -143,7 +143,6 @@ export default function AgentDialog({ onSubmit, onCancel }) {
             {t("agentDialog.run")}
           </button>
         </div>
-        <div className="modal-hint">{t("agentDialog.hint")}</div>
       </div>
     </div>,
     document.body,

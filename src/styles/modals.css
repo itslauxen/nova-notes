@@ -1,3 +1,17 @@
+/* camadas que flutuam (modais, ⌘K, menus, popovers): sem contorno — se separam
+   do fundo por um degrau de luminosidade e por uma sombra suave */
+:root {
+  --float-bg: var(--surface);
+  --float-shadow:
+    0 24px 60px -12px rgba(0, 0, 0, 0.6),
+    0 8px 20px -8px rgba(0, 0, 0, 0.35);
+}
+:root[data-mode="light"] {
+  --float-shadow:
+    0 24px 60px -12px rgba(20, 10, 40, 0.22),
+    0 6px 16px -6px rgba(20, 10, 40, 0.12);
+}
+
 /* modais (confirmação / link) */
 .modal-backdrop {
   position: fixed;
@@ -14,22 +28,20 @@
 }
 .modal {
   width: min(420px, 94vw);
-  background: var(--bg-elev);
-  border: 1px solid var(--border-strong);
-  border-radius: 14px;
-  padding: 22px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  background: var(--float-bg);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--float-shadow);
 }
 .modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 .modal-msg {
   color: var(--text-dim);
   font-size: 14px;
   line-height: 1.5;
-  margin-bottom: 18px;
 }
 .modal-label {
   display: block;
@@ -54,33 +66,94 @@
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 20px;
 }
-.modal-hint {
-  margin-top: 12px;
-  font-size: 11.5px;
-  color: var(--text-faint);
-  text-align: right;
-}
-.btn-ghost {
-  padding: 9px 16px;
-  border-radius: var(--radius-sm);
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-}
-.btn-ghost:hover {
-  background: var(--surface-hover);
-  color: var(--text);
-}
+/* a base dos botões fica em surfaces.css */
 .btn-danger {
-  padding: 9px 16px;
-  border-radius: var(--radius-sm);
-  background: #ef4444;
-  color: #fff;
-  font-weight: 600;
+  color: #ff7a7a;
+  background: color-mix(in srgb, #ef4444 24%, transparent);
 }
-.btn-danger:hover {
-  filter: brightness(1.08);
+.btn-danger:hover:not(:disabled) {
+  color: #fff;
+  background: color-mix(in srgb, #ef4444 36%, transparent);
+}
+:root[data-mode="light"] .btn-danger {
+  color: #b91c1c;
+  background: color-mix(in srgb, #ef4444 14%, transparent);
 }
 
+
+/* toasts (lib/toast.js + Toaster): no topo, somem sozinhos */
+.toaster {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  left: 50%;
+  z-index: 1200;
+  transform: translateX(-50%);
+  width: min(440px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 8px 11px 14px;
+  border-radius: 12px;
+  background: var(--float-bg);
+  box-shadow: var(--float-shadow);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  pointer-events: auto;
+  animation: toast-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.toast.leaving {
+  animation: toast-out 0.22s ease both;
+}
+.toast-ico {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--accent-strong);
+}
+.toast.error .toast-ico {
+  color: #ff7a7a;
+}
+.toast-msg {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.toast-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-top: -1px;
+  border-radius: 6px;
+  color: var(--text-faint);
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.toast-close:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}

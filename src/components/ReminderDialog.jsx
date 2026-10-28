@@ -100,7 +100,6 @@ export default function ReminderDialog({ initial = {}, onSave, onCancel }) {
           <button className="btn-ghost" onClick={onCancel}>{t('common.cancel')}</button>
           <button className="btn-primary" onClick={save}>{t('common.save')}</button>
         </div>
-        <div className="modal-hint">{t('reminder.hint')}</div>
       </div>
     </div>,
     document.body,

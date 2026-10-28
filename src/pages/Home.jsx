@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
-import { ArrowRight, Target, CalendarCheck, Mic, Loader2 } from "lucide-react";
+import { ArrowRight, Target, CalendarCheck, Mic, Loader2, Sparkles } from "lucide-react";
 import JarvisCore from "../components/JarvisCore";
 import VoiceCore from "../components/VoiceCore";
+import AiChat from "../components/AiChat";
 import { habitsApi, notesApi } from "../lib/store";
 import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
@@ -11,6 +12,7 @@ import { transcribe, generateNote } from "../lib/ai";
 import { setVoiceLevel, setVoiceActive } from "../lib/voiceLevel";
 import { triggerStarSpin } from "../lib/warp";
 import { setCoreSpin, setCoreCollapse } from "../lib/coreSpin";
+import { toast } from "../lib/toast";
 
 function greeting(t) {
   const h = new Date().getHours();
@@ -29,6 +31,8 @@ const todayKey = () => {
 // mesmos parâmetros da cena (JarvisCore) para os ícones orbitarem igual
 const INCL = 0.35;
 const GALAXY_SPEED = 0.13;
+// os 3 ícones dividem a órbita em partes iguais (120° entre um e outro)
+const ORBIT = { habit: 0, voice: (2 * Math.PI) / 3, ai: (4 * Math.PI) / 3 };
 
 export default function Home({
   onNewNote,
@@ -48,18 +52,20 @@ export default function Home({
   const homeRef = useRef(null);
   const orbitRef = useRef(null);
   const voiceRef = useRef(null);
+  const aiRef = useRef(null);
   const rafRef = useRef(0);
   const tRef = useRef(0);
   // flags de órbita (lidas pelo loop a cada frame)
   const habitOrbiting = useRef(true);
   const voiceOrbiting = useRef(true);
+  const aiOrbiting = useRef(true);
 
   const [clock, setClock] = useState("");
   const [habits, setHabits] = useState([]);
   const [open, setOpen] = useState(false);
   const [recState, setRecState] = useState("idle"); // idle | connecting | recording | processing
   const [closing, setClosing] = useState(false); // holograma fechando no fim
-  const [voiceErr, setVoiceErr] = useState("");
+  const [chat, setChat] = useState("off"); // off | opening | on | leaving
   const media = useRef(null); // { stream, recorder, audioCtx, ampRaf }
 
   useEffect(() => {
@@ -121,10 +127,13 @@ export default function Home({
     const y2 = -rz * Math.sin(INCL);
     const z2 = rz * Math.cos(INCL);
     const scale = focal / (focal + z2);
+    const vis = 0.27 + scale * 0.63; // escala do ícone (menor no fundo da órbita)
+    // o ícone (50px) escala a partir do canto superior esquerdo: desconta metade do
+    // tamanho JÁ escalado pra o centro dele cair exatamente no ponto da órbita
     return {
-      x: cx + rx * scale - 24,
-      y: cy + y2 * scale - 24,
-      scale: 0.27 + scale * 0.63,
+      x: cx + rx * scale - 25 * vis,
+      y: cy + y2 * scale - 25 * vis,
+      scale: vis,
     };
   };
 
@@ -134,7 +143,7 @@ export default function Home({
       if (homeRef.current) {
         tRef.current += 0.016;
         if (habitOrbiting.current && orbitRef.current) {
-          const p = computePos(0);
+          const p = computePos(ORBIT.habit);
           gsap.set(orbitRef.current, {
             x: p.x,
             y: p.y,
@@ -143,8 +152,17 @@ export default function Home({
           });
         }
         if (voiceOrbiting.current && voiceRef.current) {
-          const p = computePos(Math.PI); // lado oposto da órbita
+          const p = computePos(ORBIT.voice);
           gsap.set(voiceRef.current, {
+            x: p.x,
+            y: p.y,
+            scale: p.scale,
+            opacity: 1,
+          });
+        }
+        if (aiOrbiting.current && aiRef.current) {
+          const p = computePos(ORBIT.ai);
+          gsap.set(aiRef.current, {
             x: p.x,
             y: p.y,
             scale: p.scale,
@@ -156,6 +174,65 @@ export default function Home({
     };
     loop();
     return () => cancelAnimationFrame(rafRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ---------------- chat com o agente (orbe que vira o campo de mensagem) ----------------
+     O orbe voa até a base da tela (onde fica o campo); ao chegar, o campo do chat é
+     revelado a partir do tamanho do orbe (clip-path, sem mexer no layout) enquanto o orbe
+     some por cima — uma transição cruzada, sem troca seca. Fechando, o inverso. */
+  const chatInputSpot = () => {
+    const home = homeRef.current;
+    const W = home.clientWidth;
+    const H = home.clientHeight;
+    // mesma margem do .ai-input até a base (no celular, + a área segura do iPhone)
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)";
+    document.body.appendChild(probe);
+    const safe = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+    probe.remove();
+    const bottom = W <= 760 ? 16 + safe : 28;
+    return { x: W / 2 - 25, y: H - bottom - 27 - 25 };
+  };
+  const openChat = () => {
+    if (chat !== "off" || recState !== "idle") return;
+    aiOrbiting.current = false;
+    setChat("opening");
+    const { x, y } = chatInputSpot();
+    const el = aiRef.current;
+    gsap.to(el, {
+      x,
+      y,
+      scale: 1,
+      opacity: 1,
+      duration: 0.55,
+      ease: "power2.inOut",
+      onComplete: () => {
+        setChat("on");
+        gsap.to(el, { opacity: 0, duration: 0.22, ease: "power1.out" });
+      },
+    });
+  };
+  const closeChat = useCallback(() => {
+    setChat("leaving");
+    // o orbe reaparece por cima do campo que está encolhendo e então volta pra órbita
+    gsap.to(aiRef.current, { opacity: 1, duration: 0.2, delay: 0.14, ease: "power1.in" });
+    setTimeout(() => {
+      setChat("off");
+      requestAnimationFrame(() => {
+        const p = computePos(ORBIT.ai);
+        gsap.to(aiRef.current, {
+          x: p.x,
+          y: p.y,
+          scale: p.scale,
+          duration: 0.55,
+          ease: "power2.inOut",
+          onComplete: () => {
+            aiOrbiting.current = true;
+          },
+        });
+      });
+    }, 320);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -196,7 +273,7 @@ export default function Home({
       onComplete: () => {
         setOpen(false);
         requestAnimationFrame(() => {
-          const p = computePos(0);
+          const p = computePos(ORBIT.habit);
           gsap.to(el, {
             x: p.x,
             y: p.y,
@@ -308,7 +385,7 @@ export default function Home({
   const flyVoiceBack = () => {
     const el = voiceRef.current;
     if (!el) return;
-    const p = computePos(Math.PI);
+    const p = computePos(ORBIT.voice);
     setFlyTransition(true);
     el.style.transform = `translate(${p.x}px, ${p.y}px) scale(${p.scale})`;
     setTimeout(() => {
@@ -344,7 +421,7 @@ export default function Home({
       triggerStarSpin(); // giro lento das estrelas ao entrar na nova página
       navigate(`/note/${note.id}`);
     } catch (e) {
-      setVoiceErr(e.message || t("home.audioProcessFail"));
+      toast(e.message || t("home.audioProcessFail"));
       setRecState("idle");
       media.current = null;
       flyVoiceBack();
@@ -352,7 +429,6 @@ export default function Home({
   };
 
   const startRecording = async () => {
-    setVoiceErr("");
     voiceOrbiting.current = false;
     setRecState("connecting"); // loader (CSS) gira enquanto conecta
     // dispara o voo pro canto via CSS e espera 2 frames pra a transição
@@ -365,7 +441,7 @@ export default function Home({
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      setVoiceErr(t("voice.micAccessFail"));
+      toast(t("voice.micAccessFail"));
       setRecState("idle");
       flyVoiceBack();
       return;
@@ -504,7 +580,8 @@ export default function Home({
         "home" +
         (recState !== "idle" ? " voice-active" : "") +
         (recState === "processing" && !closing ? " home-loading" : "") +
-        (closing ? " home-implode" : "")
+        (closing ? " home-implode" : "") +
+        (chat !== "off" ? " home-chat" : "")
       }
       ref={homeRef}
     >
@@ -548,6 +625,28 @@ export default function Home({
         )}
       </div>
 
+      {/* ícone de IA: vira o campo do chat com o agente */}
+      <div className="ai-orbit" ref={aiRef}>
+        <button
+          className="voice-btn ai-btn"
+          onClick={openChat}
+          disabled={recState !== "idle"}
+          title={t("chat.open")}
+          aria-label={t("chat.open")}
+        >
+          <Sparkles size={20} />
+        </button>
+      </div>
+
+      {(chat === "on" || chat === "leaving") && (
+        <AiChat
+          leaving={chat === "leaving"}
+          userName={firstName}
+          onClose={closeChat}
+          onChanged={onRefresh}
+        />
+      )}
+
       {/* ícone de voz: grava e gera uma nota */}
       <div className="voice-orbit" ref={voiceRef}>
         <button
@@ -574,15 +673,6 @@ export default function Home({
         </button>
       </div>
 
-      {voiceErr && (
-        <div className="voice-err">
-          <span>{voiceErr}</span>
-          <button onClick={() => setVoiceErr("")} aria-label={t("common.close")}>
-            ×
-          </button>
-        </div>
-      )}
-
       <div className="home-overlay" ref={overlay}>
         <div className="home-hello">
           {greeting(t)}
@@ -596,8 +686,10 @@ export default function Home({
             {t("home.myGoals")}
           </button>
           <button className="btn-neon outline" onClick={onNewNote}>
-            {t("nav.newNote")}{" "}
-            <ArrowRight size={16} style={{ verticalAlign: "middle" }} />
+            {t("nav.newNote")}
+            <span className="btn-arrow">
+              <ArrowRight size={16} />
+            </span>
           </button>
         </div>
       </div>

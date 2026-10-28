@@ -6,6 +6,14 @@ A **personal productivity** web app (notes, goals and habits) with a spacey HUD 
 
 ![NOVA — notes, goals and habits](docs/demo.gif)
 
+| Home | AI chat |
+|---|---|
+| ![Home with the particle core and the three orbiting buttons](docs/screenshots/home.jpg) | ![AI chat answering from the notes](docs/screenshots/chat.jpg) |
+| **Note editor** | **Goals** |
+| ![Note with checklist, table and toggle](docs/screenshots/note.jpg) | ![Goals with progress](docs/screenshots/goals.jpg) |
+| **Habits** | **Login** |
+| ![Monthly habit grid](docs/screenshots/habits.jpg) | ![Login screen](docs/screenshots/login.jpg) |
+
 ---
 
 ## ✨ Features
@@ -20,10 +28,17 @@ A **personal productivity** web app (notes, goals and habits) with a spacey HUD 
 - **Links** dialog: custom text + external URL or internal link to another note (client-side navigation).
 - Markdown persistence, with `.md` import/export. Tags, category emoji picker and debounced autosave.
 
+**AI chat on the Home — an agent that knows your notes**
+- A sparkle orb orbits the particle core next to the voice and habits orbs; tap it and it flies down and stretches into the chat input while the rest of the Home fades out.
+- The agent (Claude) **reads your notes with tools** — keyword search across titles, tags and content (accent-insensitive), tag listing, reading a full note, listing habits — and answers with links to the notes it used.
+- It also **acts inside the app**: creates notes (including sub-pages), goals and habits, writing real editor blocks — checklists, tables, toggles, progress trackers, links between notes — instead of plain text.
+- Streaming answers, visible tool activity ("Searching notes…", "Created the note …"), and **voice input** with a live audio waveform (ElevenLabs UI) that turns into a "processing" wave while it transcribes.
+
 **AI (multi-provider)**
-- **Generate and rewrite notes** with AI — pick your provider (**OpenAI, Groq, Gemini, Cerebras**); if one hits its rate limit, the others take over as an automatic fallback.
-- **Configurable AI agents** with their own instructions.
-- Per-user API keys, stored only in your browser (never on a server).
+- **Generate and rewrite notes** with AI — pick your provider (**Claude, Groq, Cerebras, Gemini**); if one hits its rate limit, the others take over as an automatic fallback.
+- **Claude** via the official Anthropic SDK, with a model picker in Settings (Opus 5.5 by default, Sonnet 5.5, Haiku 5.5, Fable 5.1) and server-side refusal fallback.
+- **Configurable AI agents** with their own instructions, run inside the editor with `/agente`.
+- Per-user API keys: saved to your account (Supabase user metadata) when signed in, or only in the browser in local mode.
 
 **Voice control**
 - **Record your voice to create or refactor a note** — dictate an instruction and the AI rewrites the note for you.
@@ -55,7 +70,8 @@ A **personal productivity** web app (notes, goals and habits) with a spacey HUD 
 **Experience / UI**
 - **Animated home screen**: a `<canvas>` particle field with pseudo-3D math (tilted galaxy/planet/atom/solar-system, differential rotation, perspective projection, mouse repulsion).
 - **Matrix-style digital rain** and a starfield background across pages.
-- **Theme engine**: pick a base color and the app derives the whole palette (background, surfaces, borders, text, highlights) via HSL; 3 typefaces and light/dark mode.
+- **Theme engine**: pick a base color and the app derives the whole palette (background, surfaces, borders, text, highlights) via HSL; 3 typefaces, dark theme.
+- **Consistent UI kit**: one page header, one button style, one loader, borderless floating layers (dialogs, menus, ⌘K) and auto-dismissing **toasts** for errors.
 - **Internationalization (PT / EN)**: switch language in Settings; on first use the app follows your **browser language** automatically.
 - **Installable PWA**, offline-first, with a service worker.
 - Responsive: the sidebar becomes a drawer with a burger button on mobile.
@@ -73,7 +89,8 @@ A **personal productivity** web app (notes, goals and habits) with a spacey HUD 
 |---|---|
 | Frontend | React 18, Vite, React Router |
 | Editor | Tiptap (ProseMirror) + tiptap-markdown, dnd-kit |
-| AI | OpenAI · Groq · Gemini · Cerebras (text) · Groq/Whisper (voice) |
+| AI | Claude (Anthropic SDK, tool calling) · Groq · Cerebras · Gemini (text) · Groq/Whisper (voice) |
+| UI bits | ElevenLabs UI waveform (MIT) · ldrs loader |
 | Animation | Canvas 2D (pseudo-3D), GSAP |
 | Styling | CSS custom properties (dynamic HSL theme), no UI framework |
 | Backend | Supabase — Postgres, Auth, Row Level Security, Storage, Edge Functions (Deno) |
@@ -85,7 +102,8 @@ A **personal productivity** web app (notes, goals and habits) with a spacey HUD 
 ## 🧠 Technical highlights
 
 - **Self-built Web Push**: `npm:web-push` doesn't run in the Supabase edge runtime, so the whole VAPID flow (ES256 JWT, ECDH + HKDF + aes128gcm payload encryption) was implemented by hand with the Web Crypto API.
-- **Multi-provider AI layer** with automatic failover between OpenAI/Groq/Gemini/Cerebras, plus configurable agents with tools.
+- **Multi-provider AI layer** with automatic failover between Claude/Groq/Cerebras/Gemini, plus configurable prompt agents.
+- **Tool-calling agent in the browser** (`src/lib/agent.js`): a streaming agentic loop on the Anthropic SDK — RAG through tools instead of embeddings, eager tool-input streaming validated client-side before running, an append-only history, and prompt caching for the instructions and tools.
 - **Dynamic palette engine** (`src/theme/palette.js`): from a single color it generates ~20 harmonious CSS variables (HSL) that recolor the whole UI — including the canvas scene — in real time.
 - **Decoupled data layer** (`src/lib/store.js`): one interface (`notesApi`, `habitsApi`, …) for two back-ends — Supabase in the cloud or local storage — switched automatically by configuration.
 - **Pseudo-3D rendering on a 2D canvas**: disk-axis rotation, tilt, perspective projection and depth (size/brightness), no WebGL.
@@ -118,7 +136,7 @@ Opens at `http://localhost:5173`. With no config, it already works in **local mo
 
 6. Restart `npm run dev`. You now have login and cloud sync.
 
-> AI keys (OpenAI/Groq/Gemini/Cerebras) are entered per-user in **Settings** and stored only in the browser — never in env files.
+> AI keys (Claude/Groq/Cerebras/Gemini) are entered per-user in **Settings** — never in env files. Signed in, they're saved to your account; in local mode, only in the browser. The Home chat needs a Claude key.
 
 ---
 
@@ -137,12 +155,14 @@ Opens at `http://localhost:5173`. With no config, it already works in **local mo
 ```
 src/
   theme/palette.js          HSL palette generator from the base color
-  context/ThemeContext      theme state (color, font, mode)
+  context/ThemeContext      theme state (color, font)
   context/LanguageContext   i18n state (PT/EN) + browser detection
   context/AuthContext       session and auth (Supabase)
   lib/i18n.js               PT/EN dictionaries + t()
   lib/store.js              data layer (cloud OR local)
-  lib/ai.js                 multi-provider AI (OpenAI/Groq/Gemini/Cerebras)
+  lib/ai.js                 multi-provider AI (Claude/Groq/Cerebras/Gemini)
+  lib/agent.js              Home chat agent: tools + streaming tool-calling loop
+  lib/toast.js              global toasts (rendered by Toaster)
   lib/recorder.js           voice recording + transcription
   lib/push.js               Web Push subscription
   components/
@@ -150,6 +170,8 @@ src/
     Editor, slashCommands   Tiptap editor + "/" menu
     Reminder, ReminderDialog reminders + notification config
     CommandPalette          global search (Ctrl/Cmd+K)
+    AiChat, Waveform        Home chat + live mic waveform (ElevenLabs UI)
+    PageHeader, EmptyState, Spinner, Toaster   shared UI
     Sidebar, Login, dialogs
   pages/
     Home, Goals, Habits, Agents, NotePage, Settings

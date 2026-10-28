@@ -47,11 +47,10 @@
   right: 0;
   z-index: 41;
   min-width: 190px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--float-bg);
+  border-radius: 12px;
   padding: 6px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--float-shadow);
   display: flex;
   flex-direction: column;
 }

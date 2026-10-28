@@ -114,7 +114,8 @@ export const notesApi = {
   get: (id) => backend.get('notes', id),
   create: (data = {}) =>
     backend.insert('notes', {
-      title: 'Sem título', content: '', emoji: '📄', tags: [],
+      // título vazio: a interface mostra "Sem título"/"Untitled" no idioma atual
+      title: '', content: '', emoji: '📄', tags: [],
       is_goal: false, is_agent: false, progress: 0, done: false, position: 0, parent_id: null, ...data,
     }),
   update: (id, patch) => backend.update('notes', id, patch),
@@ -128,7 +129,8 @@ export const agentsApi = {
   listShared: async () =>
     shared((await backend.list('notes', 'updated_at')).filter((n) => n.is_agent)),
   create: (data = {}) =>
-    notesApi.create({ is_agent: true, emoji: '🤖', title: 'Novo agente', ...data }),
+    // nome vazio: o card mostra o placeholder "Nome do agente"/"Agent name" no idioma atual
+    notesApi.create({ is_agent: true, emoji: '🤖', title: '', ...data }),
   update: (id, patch) => backend.update('notes', id, patch),
   remove: (id) => backend.remove('notes', id),
 }

@@ -12,6 +12,9 @@ import { Plus, ChevronLeft, ChevronRight, MoreVertical, Trash2, Pencil, Link2, E
 import { habitsApi, notesApi } from '../lib/store'
 import { useLang } from '../context/LanguageContext'
 import EmojiPicker from '../components/EmojiPicker'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
+import Spinner from '../components/Spinner'
 
 const stop = (e) => e.stopPropagation()
 
@@ -168,7 +171,7 @@ export default function Habits() {
 
   if (loading) return (
     <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="inline-loader" style={{ padding: 0 }}><div className="ring" /><span>{t('common.loading')}</span></div>
+      <Spinner inline />
     </div>
   )
 
@@ -177,20 +180,17 @@ export default function Habits() {
 
   return (
     <div className="panel">
-      <div className="habits-head">
-        <div>
-          <div className="panel-title">{t('nav.habits')}</div>
-          <div className="panel-sub">{t('habits.sub')}</div>
+      <PageHeader title={t('nav.habits')} sub={t('habits.sub')}>
+        <div className="month-nav">
+          <button className="icon-btn" onClick={() => move(-1)}><ChevronLeft size={18} /></button>
+          <span>{MONTHS[ref.m]} {ref.y}</span>
+          <button className="icon-btn" onClick={() => move(1)}><ChevronRight size={18} /></button>
         </div>
-        <div className="habits-actions">
-          <div className="month-nav">
-            <button className="icon-btn" onClick={() => move(-1)}><ChevronLeft size={18} /></button>
-            <span>{MONTHS[ref.m]} {ref.y}</span>
-            <button className="icon-btn" onClick={() => move(1)}><ChevronRight size={18} /></button>
-          </div>
+        {/* lista vazia: a ação fica só dentro do EmptyState */}
+        {habits.length > 0 && (
           <button className="btn-primary" onClick={add}><Plus size={16} style={{ verticalAlign: 'middle' }} /> {t('habits.habit')}</button>
-        </div>
-      </div>
+        )}
+      </PageHeader>
 
       {error && (
         <div className="card" style={{ borderColor: 'var(--accent)', margin: '8px 0 18px' }}>
@@ -203,7 +203,7 @@ export default function Habits() {
       )}
 
       {habits.length === 0 ? (
-        <p style={{ color: 'var(--text-dim)' }}>{t('habits.empty')}</p>
+        <EmptyState text={t('habits.empty')} actionLabel={t('habits.create')} onAction={add} />
       ) : (
         <div className="habit-table-wrap fade-in" ref={tableRef}>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>

@@ -7,10 +7,9 @@
   align-items: center;
   gap: 2px;
   padding: 4px;
-  border-radius: 10px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  background: var(--float-bg);
+  box-shadow: var(--float-shadow);
 }
 .bubble-btn {
   display: inline-flex;

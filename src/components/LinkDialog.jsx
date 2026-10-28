@@ -58,7 +58,6 @@ export default function LinkDialog({ notes = [], onConfirm, onCancel }) {
           <button className="btn-ghost" onClick={onCancel}>{t('common.cancel')}</button>
           <button className="btn-primary" onClick={submit}>{t('common.insert')}</button>
         </div>
-        <div className="modal-hint">{t('link.hint')}</div>
       </div>
     </div>,
     document.body,

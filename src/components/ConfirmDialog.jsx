@@ -25,7 +25,6 @@ export default function ConfirmDialog({ title, message, confirmLabel, onConfirm,
           <button className="btn-ghost" onClick={onCancel}>{t('common.cancel')}</button>
           <button className="btn-danger" onClick={onConfirm} autoFocus>{confirmText}</button>
         </div>
-        <div className="modal-hint">{t('dialog.confirmHint')}</div>
       </div>
     </div>,
     document.body,

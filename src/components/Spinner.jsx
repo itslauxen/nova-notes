@@ -1,19 +1,19 @@
-import { RingLoader } from "react-spinners";
+import { useLang } from "../context/LanguageContext";
 
-function accentColor() {
-  if (typeof window === "undefined") return "#26c8ec";
+// Loader padrão do app: só o anel girando na cor do tema.
+// - padrão: centraliza na página;  inline: bloco no fluxo (abaixo do cabeçalho);
+// - size="sm": anel pequeno dentro de textos e botões.
+export default function Spinner({ inline = false, size }) {
+  const { t } = useLang();
+  if (size === "sm")
+    return <span className="ring ring-sm" role="status" aria-label={t("common.loading")} />;
   return (
-    getComputedStyle(document.documentElement)
-      .getPropertyValue("--accent")
-      .trim() || "#26c8ec"
-  );
-}
-
-// Loader da página: o mesmo "ring" do Gerando, porém maior.
-export default function Spinner() {
-  return (
-    <div className="page-loader">
-      <RingLoader color={accentColor()} size={54} />
+    <div
+      className={"page-loader" + (inline ? " inline" : "")}
+      role="status"
+      aria-label={t("common.loading")}
+    >
+      <span className="ring" />
     </div>
   );
 }

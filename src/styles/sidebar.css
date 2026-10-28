@@ -16,8 +16,7 @@
 }
 /* glow neon só no ícone, apenas no modo escuro (no claro fica feio) */
 :root[data-mode="dark"] .burger svg {
-  filter: drop-shadow(0 0 4px var(--accent-glow))
-    drop-shadow(0 0 1px var(--accent));
+  filter: drop-shadow(0 0 2px var(--accent-glow));
 }
 .nav-backdrop {
   display: none;
@@ -53,20 +52,45 @@
   display: block;
   flex-shrink: 0;
   color: var(--accent);
-  filter: drop-shadow(0 0 6px var(--accent-glow));
+  filter: drop-shadow(0 0 3px var(--accent-glow));
 }
 .brand-name {
   font-weight: 700;
   font-size: 16px;
   letter-spacing: 0.2px;
 }
+/* configurações: botão de ícone "clear" no canto superior direito da sidebar */
+.sidebar-settings {
+  margin-left: auto;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.sidebar-settings:hover {
+  text-decoration: none;
+}
+.sidebar-settings.active {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
 .nav-section {
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--text-faint);
-  padding: 18px 10px 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+  padding: 20px 11px 6px;
+}
+/* "Notas" + botão de nova nota (clear) na ponta direita da linha */
+.nav-section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  padding-bottom: 2px;
+  padding-right: 4px;
+}
+.nav-section-add {
+  width: 28px;
+  height: 28px;
+  color: var(--text-dim);
 }
 .nav-item {
   position: relative;
@@ -139,17 +163,6 @@
   color: var(--accent-strong);
   font-weight: 600;
 }
-.nav-item.active::before {
-  content: "";
-  position: absolute;
-  left: 3px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  border-radius: 3px;
-  background: var(--accent);
-}
 .nav-item svg {
   opacity: 0.85;
 }
@@ -182,13 +195,16 @@
     transform 0.15s ease,
     opacity 0.18s ease;
 }
-/* + aparece só no hover do item (fade-in) */
-.nav-add {
-  opacity: 0;
-}
-.nav-item:hover .nav-add,
-.nav-item.active .nav-add {
-  opacity: 1;
+/* + aparece só no hover do item (fade-in). Só em aparelhos com mouse: no iOS,
+   um :hover que revela conteúdo faz o 1º toque virar "hover" e só o 2º navegar */
+@media (hover: hover) {
+  .nav-add {
+    opacity: 0;
+  }
+  .nav-item:hover .nav-add,
+  .nav-item.active .nav-add {
+    opacity: 1;
+  }
 }
 .nav-add:hover,
 .nav-caret:hover {
@@ -224,29 +240,5 @@
   letter-spacing: 0.5px;
 }
 
-.add-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-  padding: 8px 11px;
-  border-radius: 9px;
-  color: var(--text-faint);
-  font-weight: 500;
-  font-size: 13.5px;
-  width: 100%;
-  text-align: left;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-.add-btn:hover {
-  background: var(--surface-hover);
-  color: var(--accent-strong);
-}
 
-.sidebar-footer {
-  margin-top: auto;
-  padding-top: 12px;
-}
 

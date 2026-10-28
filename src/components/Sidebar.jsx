@@ -6,8 +6,9 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Home, Target, CalendarCheck, Settings, Plus, FileText, Trash2, Bot, Search, ChevronRight } from 'lucide-react'
+import { Home, Target, CalendarCheck, Settings, Plus, FileText, Trash2, Bot, Search, ChevronRight, Share2 } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog'
+import ShareDialog from './ShareDialog'
 import PinwheelIcon from './PinwheelIcon'
 import { useLang } from '../context/LanguageContext'
 import { buildTree, flattenTree, removeChildrenOf, getProjection } from '../lib/tree'
@@ -67,7 +68,9 @@ function NoteItem({ n, depth = 0, hasChildren = false, collapsed = false, onTogg
     transform: CSS.Transform.toString(vTransform),
     // o item ENCOLHE pela direita; o título fica no lugar (não desliza)
     width: revealed ? `calc(100% - ${reveal}px)` : undefined,
-    transition: isDragging ? transition : live.current ? 'none' : 'width 0.2s ease, transform 0.2s ease',
+    // transform: usa a transição do dnd-kit (ela é nula na troca de lugar ao soltar);
+    // forçar 'transform 0.2s' fazia os vizinhos pularem e voltarem no drop
+    transition: live.current ? 'none' : [transition, 'width 0.2s ease'].filter(Boolean).join(', '),
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
     ...(revealed ? { backgroundColor: 'var(--bg-elev)', overflow: 'hidden' } : null),
@@ -137,6 +140,7 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
   const navigate = useNavigate()
   const [menu, setMenu] = useState(null) // { id, x, y }
   const [confirm, setConfirm] = useState(null) // { id, title }
+  const [shareFor, setShareFor] = useState(null) // { id, title }
 
   // collapse por nota (persistido no localStorage)
   const [collapsed, setCollapsed] = useState(() => {
@@ -220,6 +224,14 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
         <div className="brand">
           <PinwheelIcon className="logo" size={28} />
           <span className="brand-name">Nova notes</span>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => 'icon-btn sidebar-settings' + (isActive ? ' active' : '')}
+            aria-label={t('nav.settings')}
+            title={t('nav.settings')}
+          >
+            <Settings size={18} />
+          </NavLink>
         </div>
 
         <button type="button" className="nav-item nav-search" onClick={onSearch}>
@@ -240,7 +252,18 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
           <Bot size={17} /> <span className="title">{t('nav.agents')}</span>
         </NavLink>
 
-        <div className="nav-section">{t('nav.notes')}</div>
+        <div className="nav-section nav-section-row">
+          <span>{t('nav.notes')}</span>
+          <button
+            type="button"
+            className="icon-btn nav-section-add"
+            onClick={onNewNote}
+            aria-label={t('nav.newNote')}
+            title={t('nav.newNote')}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -267,7 +290,6 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
             ))}
           </SortableContext>
         </DndContext>
-        <button className="add-btn" onClick={onNewNote}><Plus size={15} /> {t('nav.newNote')}</button>
 
         {sharedNotes.length > 0 && (
           <>
@@ -285,17 +307,19 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
           </>
         )}
 
-        <div className="sidebar-footer">
-          <NavLink to="/settings" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-            <Settings size={17} /> <span className="title">{t('nav.settings')}</span>
-          </NavLink>
-        </div>
       </aside>
 
       {menu && createPortal(
         <>
           <div className="menu-backdrop" onClick={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null) }} />
           <div className="card-menu" style={{ position: 'fixed', top: menu.y, left: menu.x, right: 'auto', zIndex: 120 }}>
+            <button onClick={() => {
+              const n = notes.find((x) => x.id === menu.id)
+              setShareFor({ id: menu.id, title: n?.title || t('common.untitled') })
+              setMenu(null)
+            }}>
+              <Share2 size={14} /> {t('common.share')}
+            </button>
             <button className="danger" onClick={() => {
               const n = notes.find((x) => x.id === menu.id)
               setConfirm({ id: menu.id, title: n?.title || t('common.untitled') })
@@ -306,6 +330,10 @@ export default function Sidebar({ notes, sharedNotes = [], onNewNote, onDeleteNo
           </div>
         </>,
         document.body,
+      )}
+
+      {shareFor && (
+        <ShareDialog noteId={shareFor.id} title={shareFor.title} onClose={() => setShareFor(null)} />
       )}
 
       {confirm && (

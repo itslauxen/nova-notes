@@ -12,7 +12,8 @@ const defaults = {
 
 function load() {
   try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') }
+    // o app é só escuro: ignora um modo claro salvo de antes
+    return { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'), mode: 'dark' }
   } catch {
     return defaults
   }

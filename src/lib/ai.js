@@ -1,21 +1,34 @@
 // Geração de texto e transcrição de voz.
-// Provedor principal: Groq (mais RPM no free tier). Fallback: Gemini.
-// Ordem para texto:
-//   1) chave Groq do usuário  -> Groq direto
-//   2) chave Gemini do usuário -> Gemini direto
-//   3) proxy serverless /api/generate (Groq no servidor, com fallback Gemini)
+// Provedores (chave do próprio usuário, chamada direto do navegador):
+// Groq, Cerebras, Gemini e Claude (SDK oficial da Anthropic).
+// Ordem para texto: o provedor escolhido primeiro, depois os outros que têm
+// chave, e por último o proxy serverless /api/generate.
 // Transcrição: Groq Whisper (chave do usuário) ou proxy /api/transcribe.
+
+import Anthropic from '@anthropic-ai/sdk'
 
 const GROQ_MODEL = 'llama-3.3-70b-versatile'
 const GROQ_WHISPER = 'whisper-large-v3-turbo'
 const CEREBRAS_MODEL = 'llama-3.3-70b'
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const MAX_TOKENS = 3000 // saída mais longa
+// Claude: o raciocínio (thinking) conta no max_tokens, então dá mais folga
+const CLAUDE_MAX_TOKENS = 16000
+
+// modelos do Claude oferecidos em Configurações (o primeiro é o padrão)
+export const CLAUDE_MODELS = [
+  { id: 'claude-opus-5-5', label: 'Claude Opus 5.5' },
+  { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5' },
+  { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5' },
+  { id: 'claude-fable-5-1', label: 'Claude Fable 5.1' },
+]
 
 const GEMINI_STORAGE = 'nova-gemini-key'
 const GROQ_STORAGE = 'nova-groq-key'
 const CEREBRAS_STORAGE = 'nova-cerebras-key'
-const PROVIDER_STORAGE = 'nova-ai-provider' // 'groq' | 'cerebras' | 'gemini'
+const CLAUDE_STORAGE = 'nova-claude-key'
+const CLAUDE_MODEL_STORAGE = 'nova-claude-model'
+const PROVIDER_STORAGE = 'nova-ai-provider' // 'groq' | 'cerebras' | 'gemini' | 'claude'
 
 // instrução fixa: sem preâmbulos, só o conteúdo pedido, em Markdown bem formatado
 const SYSTEM =
@@ -48,6 +61,21 @@ export function getCerebrasKey() {
 }
 export function setCerebrasKey(k) {
   try { k ? localStorage.setItem(CEREBRAS_STORAGE, k) : localStorage.removeItem(CEREBRAS_STORAGE) } catch {}
+}
+export function getClaudeKey() {
+  try { return localStorage.getItem(CLAUDE_STORAGE) || '' } catch { return '' }
+}
+export function setClaudeKey(k) {
+  try { k ? localStorage.setItem(CLAUDE_STORAGE, k) : localStorage.removeItem(CLAUDE_STORAGE) } catch {}
+}
+export function getClaudeModel() {
+  try {
+    const m = localStorage.getItem(CLAUDE_MODEL_STORAGE)
+    return CLAUDE_MODELS.some((x) => x.id === m) ? m : CLAUDE_MODELS[0].id
+  } catch { return CLAUDE_MODELS[0].id }
+}
+export function setClaudeModel(m) {
+  try { localStorage.setItem(CLAUDE_MODEL_STORAGE, m) } catch {}
 }
 
 // provedor preferido escolhido pelo usuário (padrão: groq)
@@ -121,15 +149,57 @@ async function geminiText(prompt, key) {
   return (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('').trim()
 }
 
+/* ----------------- Claude (SDK oficial da Anthropic) ----------------- */
+async function claudeText(prompt, key) {
+  const model = getClaudeModel()
+  // a chave é do próprio usuário e fica no navegador dele (mesmo modelo dos outros provedores)
+  const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true })
+  let res
+  try {
+    res = await client.beta.messages.create({
+      model,
+      max_tokens: CLAUDE_MAX_TOKENS,
+      system: SYSTEM,
+      // texto de nota: esforço médio basta (no Opus 5.5 e no Haiku 5.5 já é o padrão; aqui fica explícito)
+      output_config: { effort: 'medium' },
+      messages: [{ role: 'user', content: prompt }],
+      // se o modelo recusar por política, a API refaz o pedido num modelo de reserva na mesma chamada
+      // (o Haiku 5.5 não tem fallback do lado do servidor)
+      ...(model === 'claude-haiku-5-5'
+        ? {}
+        : { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' }),
+    })
+  } catch (e) {
+    let msg = 'Erro na API do Claude.'
+    if (e instanceof Anthropic.RateLimitError) msg = QUOTA_MSG
+    else if (e instanceof Anthropic.AuthenticationError) msg = 'Chave do Claude inválida. Confira em Configurações.'
+    else if (e instanceof Anthropic.PermissionDeniedError) msg = 'Sua chave do Claude não tem acesso a esse modelo.'
+    else if (e instanceof Anthropic.APIError && e.message) msg = e.message
+    const err = new Error(msg)
+    err.status = e?.status
+    throw err
+  }
+  if (res.stop_reason === 'refusal') {
+    const err = new Error('O Claude recusou esse pedido.')
+    err.status = 400
+    throw err
+  }
+  return res.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim()
+}
+
 /* ----------------- cadeia de provedores ----------------- */
-const keyFor = (p) => (p === 'groq' ? getGroqKey() : p === 'cerebras' ? getCerebrasKey() : getGeminiKey())
+const keyFor = (p) =>
+  p === 'groq' ? getGroqKey() : p === 'cerebras' ? getCerebrasKey() : p === 'claude' ? getClaudeKey() : getGeminiKey()
 const callProvider = (p, prompt, key) =>
-  p === 'groq' ? groqText(prompt, key) : p === 'cerebras' ? cerebrasText(prompt, key) : geminiText(prompt, key)
+  p === 'groq' ? groqText(prompt, key)
+  : p === 'cerebras' ? cerebrasText(prompt, key)
+  : p === 'claude' ? claudeText(prompt, key)
+  : geminiText(prompt, key)
 
 // ordem: provedor escolhido primeiro, depois os outros como fallback
 function providerOrder() {
   const sel = getProvider()
-  const all = ['groq', 'cerebras', 'gemini']
+  const all = ['groq', 'cerebras', 'gemini', 'claude']
   return [sel, ...all.filter((p) => p !== sel)]
 }
 
@@ -162,11 +232,11 @@ async function proxyText(prompt, provider) {
       body: JSON.stringify({ prompt, provider }),
     })
   } catch {
-    throw new Error('Configure uma chave de IA (Groq, Cerebras ou Gemini) em Configurações.')
+    throw new Error('Configure uma chave de IA (Groq, Cerebras, Gemini ou Claude) em Configurações.')
   }
   const ct = res.headers.get('content-type') || ''
   if (!ct.includes('application/json')) {
-    throw new Error('Configure uma chave de IA (Groq, Cerebras ou Gemini) em Configurações.')
+    throw new Error('Configure uma chave de IA (Groq, Cerebras, Gemini ou Claude) em Configurações.')
   }
   const data = await res.json()
   if (!res.ok) {

@@ -115,32 +115,4 @@
     content: "...";
   }
 }
-.ai-error {
-  position: absolute;
-  z-index: 6;
-  max-width: min(92%, 360px);
-  background: color-mix(in srgb, #ef4444 22%, var(--bg));
-  color: #fca5a5;
-  border: 1px solid color-mix(in srgb, #ef4444 40%, transparent);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  font-size: 13px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-.ai-error-msg {
-  flex: 1;
-  min-width: 0;
-  word-break: break-word;
-  line-height: 1.4;
-}
-.ai-error button {
-  flex-shrink: 0;
-}
-.ai-error button {
-  color: #fca5a5;
-  font-size: 18px;
-  line-height: 1;
-}
 

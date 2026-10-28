@@ -99,7 +99,6 @@ export default function AIDialog({
           <button className="btn-ghost" onClick={onCancel}>{t('common.cancel')}</button>
           <button className="btn-primary" onClick={run}>{t('ai.generate')}</button>
         </div>
-        <div className="modal-hint">{t('ai.hint')}</div>
       </div>
     </div>,
     document.body,

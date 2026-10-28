@@ -57,7 +57,6 @@ export default function CommandPalette({ notes, onNewNote, onClose }) {
         <div className="cmdk-input">
           <Search size={17} />
           <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('cmdk.placeholder')} />
-          <kbd>esc</kbd>
         </div>
         <div className="cmdk-list">
           {items.length === 0 && <div className="cmdk-empty">{t('common.nothingFound')}</div>}

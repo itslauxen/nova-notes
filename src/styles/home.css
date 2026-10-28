@@ -411,41 +411,6 @@
   text-shadow: 0 0 6px var(--accent-glow);
   white-space: nowrap;
 }
-.voice-err {
-  position: absolute;
-  right: 16px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
-  z-index: 80;
-  max-width: min(86%, 320px);
-  padding: 10px 13px;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #ff8a95;
-  background: color-mix(in srgb, #ff4d5e 14%, var(--bg-elev));
-  border: 1px solid color-mix(in srgb, #ff4d5e 45%, transparent);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.voice-err span {
-  flex: 1;
-  min-width: 0;
-}
-.voice-err button {
-  flex: none;
-  background: none;
-  border: none;
-  color: #ff8a95;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 2px;
-  opacity: 0.8;
-}
-.voice-err button:hover {
-  opacity: 1;
-}
 @keyframes voice-pulse {
   0%,
   100% {

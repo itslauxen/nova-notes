@@ -18,12 +18,15 @@
     /* respeita o notch / safe area */
     padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
     padding-left: calc(env(safe-area-inset-left, 0px) + 12px);
+    /* um pouco mais de blur que no desktop: o conteúdo passa por trás no drawer */
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
   }
   /* no modo claro: opacidade um pouco reduzida, mas legível sobre o backdrop */
   :root[data-mode="light"] .sidebar {
     background-color: color-mix(in srgb, var(--bg-elev) 78%, transparent);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(11px);
+    backdrop-filter: blur(11px);
   }
   .sidebar.open {
     transform: translateX(0);
@@ -61,11 +64,12 @@
   .home-overlay {
     padding-bottom: 12vh;
   }
-  .habits-actions {
+  /* hábitos: mês + botão não cabem ao lado do título -> linha inteira */
+  .page-actions:has(.month-nav) {
     width: 100%;
     justify-content: space-between;
   }
-  .habits-actions .btn-primary {
+  .page-actions .btn-primary {
     white-space: nowrap;
   }
   .month-nav span {
@@ -156,7 +160,30 @@
   }
   .home-actions .btn-neon {
     width: 85vw;
+    height: 44px;
     justify-content: center;
+  }
+  /* botão largo: texto no centro e a bolinha da seta na ponta direita */
+  .home-actions .btn-neon.outline {
+    position: relative;
+    width: min(85vw, 240px);
+    padding: 0 48px;
+  }
+  .home-actions .btn-arrow {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .home-actions .btn-neon.outline:hover .btn-arrow {
+    transform: translate(2px, -50%);
+  }
+  /* toque: botões um pouco mais altos que no desktop */
+  .btn-primary,
+  .btn-ghost,
+  .btn-danger,
+  .chip {
+    height: 38px;
   }
   .home-title {
     font-size: clamp(54px, 16vw, 84px);

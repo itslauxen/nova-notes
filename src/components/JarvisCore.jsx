@@ -18,6 +18,18 @@ const TAU = Math.PI * 2;
 const INCL = 0.35; // inclinação do disco (~75°): quase de frente, com leve profundidade
 const ROLL = 0; // leve rotação no plano da tela (eixo Z)
 
+// Desempenho: cada fill() no canvas vira uma mensagem pro processo de GPU do
+// navegador. Em vez de 3000 fills por frame, os pontos são agrupados por
+// brilho (fixo por partícula) e opacidade (muda por frame) e cada grupo vira um
+// único fill — ~100 por frame, com diferença de tom imperceptível.
+const LUM_MIN = 55;
+const LUM_RANGE = 28;
+const LUM_STEPS = 8;
+const ALPHA_STEPS = 24;
+const FPS = 30;
+const FRAME_MS = 1000 / FPS;
+const BASE_MS = 1000 / 60; // as constantes de movimento foram afinadas a 60 fps
+
 /* ---------- geradores de formas 3D (origem no centro) ---------- */
 
 function buildGalaxy(R) {
@@ -179,10 +191,15 @@ export default function JarvisCore() {
         orbitR: 1.2 + Math.random() * 3,
         orbitSpeed: 0.4 + Math.random() * 1.1,
         size: 0.9 + Math.random() * 1.6,
-        lum: 55 + Math.random() * 28,
+        lumStep: Math.floor(Math.random() * LUM_STEPS),
         tw: Math.random() * TAU,
       });
     }
+
+    // um balde de índices por combinação brilho × opacidade, reaproveitado a cada frame
+    const buckets = Array.from({ length: LUM_STEPS * ALPHA_STEPS }, () => []);
+    let styles = [];
+    let stylesKey = "";
 
 
     let sceneIndex = 0;
@@ -266,18 +283,46 @@ export default function JarvisCore() {
       applyScene(sceneIndex);
     }, SWAP_MS);
 
-    let raf,
+    let raf = null,
+      last = performance.now() - FRAME_MS,
       t = 0,
       spinMul = 1, // multiplicador da rotação natural (acelera no carregar/fechar)
       collapseCur = 0; // 0..1: puxa as partículas pro centro (implosão)
     const cosR = Math.cos(ROLL),
       sinR = Math.sin(ROLL);
-    const render = () => {
+
+    // aba escondida ou canvas fora da tela: para de desenhar
+    let onScreen = true;
+    const active = () => !document.hidden && onScreen;
+    const wake = () => {
+      if (!active() || raf !== null) return;
+      last = performance.now() - FRAME_MS;
+      raf = requestAnimationFrame(render);
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      wake();
+    });
+    observer.observe(canvas);
+    document.addEventListener("visibilitychange", wake);
+
+    const render = (now = performance.now()) => {
+      if (!active()) {
+        raf = null;
+        return;
+      }
+      raf = requestAnimationFrame(render);
+      if (now - last < FRAME_MS - 2) return;
+      // k = quantos frames de 60 fps se passaram: mantém a velocidade igual a 30 fps
+      const k = Math.min(3, (now - last) / BASE_MS);
+      last = now;
+      const follow = 1 - Math.pow(0.9, k);
+
       // acelera a rotação natural quando pedido (carregar/fechar holograma)
-      spinMul += (getCoreSpin() - spinMul) * 0.08;
+      spinMul += (getCoreSpin() - spinMul) * (1 - Math.pow(0.92, k));
       // colapso: ease rápido em direção ao alvo (implosão pro centro)
-      collapseCur += (getCoreCollapse() - collapseCur) * 0.16;
-      if (!dragging) t += 0.016 * spinMul; // pausa o giro automático enquanto o dedo controla
+      collapseCur += (getCoreCollapse() - collapseCur) * (1 - Math.pow(0.84, k));
+      if (!dragging) t += 0.016 * spinMul * k; // pausa o giro automático enquanto o dedo controla
       ctx.clearRect(0, 0, W, H);
       // amplitude da voz (0..1) -> faz a galáxia reagir como uma onda sonora
       const amp = getVoiceLevel();
@@ -294,6 +339,18 @@ export default function JarvisCore() {
         cy = H / 2 - 20 - (W <= 760 ? H * 0.06 : 0);
       const scene = SCENES[sceneIndex];
       const focal = maxR * 2.4;
+
+      const key = `${h}|${sat}|${mode}`;
+      if (key !== stylesKey) {
+        stylesKey = key;
+        styles = buckets.map((_, b) => {
+          const step = Math.floor(b / ALPHA_STEPS);
+          const lum = LUM_MIN + (step / (LUM_STEPS - 1)) * LUM_RANGE - (mode === "light" ? 18 : 0);
+          const alpha = (b % ALPHA_STEPS) / (ALPHA_STEPS - 1);
+          return `hsl(${h} ${sat}% ${lum}% / ${alpha})`;
+        });
+      }
+      for (const bucket of buckets) bucket.length = 0;
 
       for (let i = 0; i < COUNT; i++) {
         const p = particles[i];
@@ -325,8 +382,8 @@ export default function JarvisCore() {
         const sy = cy + py * scale;
 
         // easing até o alvo projetado (dá o movimento fluido)
-        p.x += (sx - p.x) * 0.1;
-        p.y += (sy - p.y) * 0.1;
+        p.x += (sx - p.x) * follow;
+        p.y += (sy - p.y) * follow;
 
         // repulsão do mouse
         const mdx = p.x - mouse.x,
@@ -335,8 +392,8 @@ export default function JarvisCore() {
         if (md2 < 9000) {
           const f = (9000 - md2) / 9000;
           const d = Math.sqrt(md2) || 1;
-          p.x += (mdx / d) * f * 6;
-          p.y += (mdy / d) * f * 6;
+          p.x += (mdx / d) * f * 6 * k;
+          p.y += (mdy / d) * f * 6 * k;
         }
 
         // órbita local (nunca fica 100% parado)
@@ -366,7 +423,6 @@ export default function JarvisCore() {
           (0.28 + depth * 0.62) *
           (0.75 + Math.sin(t * 1.6 + p.tw) * 0.25) *
           (1 + amp * 0.6);
-        const lum = mode === "light" ? p.lum - 18 : p.lum;
         // colapso: puxa o ponto pro centro e some (implosão)
         let drawX = p.x + ox,
           drawY = p.y + oy;
@@ -378,17 +434,33 @@ export default function JarvisCore() {
           // opacidade some rápido: chega a 0 lá pela metade do colapso
           aMul = Math.max(0, 1 - collapseCur * 1.9);
         }
-        ctx.fillStyle = `hsl(${h} ${sat}% ${lum}% / ${clamp(alpha * aMul, 0, 1)})`;
+        const alphaStep = Math.round(clamp(alpha * aMul, 0, 1) * (ALPHA_STEPS - 1));
+        if (alphaStep === 0) continue;
+        p.drawX = drawX;
+        p.drawY = drawY;
+        p.drawR = Math.max(0.4, size);
+        buckets[p.lumStep * ALPHA_STEPS + alphaStep].push(i);
+      }
+
+      for (let b = 0; b < buckets.length; b++) {
+        const bucket = buckets[b];
+        if (!bucket.length) continue;
+        ctx.fillStyle = styles[b];
         ctx.beginPath();
-        ctx.arc(drawX, drawY, Math.max(0.4, size), 0, TAU);
+        for (const i of bucket) {
+          const p = particles[i];
+          ctx.moveTo(p.drawX + p.drawR, p.drawY);
+          ctx.arc(p.drawX, p.drawY, p.drawR, 0, TAU);
+        }
         ctx.fill();
       }
-      raf = requestAnimationFrame(render);
     };
     render();
 
     return () => {
-      cancelAnimationFrame(raf);
+      if (raf !== null) cancelAnimationFrame(raf);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", wake);
       clearInterval(swap);
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("pointerdown", onDown);

@@ -6,3 +6,6 @@ dist
 *.local
 vite.config.js.timestamp-*
 vite.config.*.timestamp-*
+
+# artefatos da taste skill (screenshots de inspeção)
+.taste-skill/

@@ -1,12 +1,14 @@
 // Gravação de voz com auto-parada por silêncio.
 // Retorna { promise, stop }: a promise resolve com o Blob do áudio quando para
 // (por silêncio, tempo máximo ou stop() manual). onLevel recebe a amplitude (0..1).
-export function recordVoice({ onLevel, silenceMs = 2000, maxMs = 60000 } = {}) {
+// onStream recebe o MediaStream aberto (ex.: pra desenhar uma waveform sem abrir outro microfone).
+export function recordVoice({ onLevel, onStream, silenceMs = 2000, maxMs = 60000 } = {}) {
   let stopFn = () => {}
   const promise = new Promise((resolve, reject) => {
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
+        onStream?.(stream)
         const mime =
           [
             'audio/webm;codecs=opus',

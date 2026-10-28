@@ -1,17 +1,4 @@
 /* ---------- hábitos ---------- */
-.habits-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-.habits-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 .month-nav {
   display: flex;
   align-items: center;
@@ -54,13 +41,12 @@
   padding: 0 12px !important;
   position: sticky;
   left: 0;
-  background: color-mix(in srgb, var(--bg-elev) 50%, transparent);
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
+  /* opaco: os dias que rolam por baixo da coluna fixa não podem aparecer através dela */
+  background: var(--bg-elev);
   z-index: 2;
 }
 tbody .habit-name-col {
-  background: color-mix(in srgb, var(--surface) 50%, transparent);
+  background: color-mix(in srgb, var(--surface) 50%, var(--bg-elev));
 }
 .day-col {
   width: 30px;

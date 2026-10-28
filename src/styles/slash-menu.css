@@ -7,11 +7,10 @@
   width: 270px;
   max-height: 320px;
   overflow-y: auto;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--float-bg);
+  border-radius: 12px;
   padding: 6px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--float-shadow);
 }
 .slash-item {
   display: flex;

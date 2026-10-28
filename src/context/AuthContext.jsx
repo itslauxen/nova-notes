@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { setGeminiKey, setGroqKey, setCerebrasKey, setProvider } from '../lib/ai'
+import { setGeminiKey, setGroqKey, setCerebrasKey, setClaudeKey, setClaudeModel, setProvider } from '../lib/ai'
 import { setCurrentUser } from '../lib/store'
 
 const AuthContext = createContext(null)
@@ -13,6 +13,10 @@ function syncKeys(user) {
   if (q) setGroqKey(q)
   const c = user?.user_metadata?.cerebras_key
   if (c) setCerebrasKey(c)
+  const a = user?.user_metadata?.claude_key
+  if (a) setClaudeKey(a)
+  const am = user?.user_metadata?.claude_model
+  if (am) setClaudeModel(am)
   const p = user?.user_metadata?.ai_provider
   if (p) setProvider(p)
 }
@@ -49,6 +53,8 @@ export function AuthProvider({ children }) {
     updateGeminiKey: (gemini_key) => supabase.auth.updateUser({ data: { gemini_key } }),
     updateGroqKey: (groq_key) => supabase.auth.updateUser({ data: { groq_key } }),
     updateCerebrasKey: (cerebras_key) => supabase.auth.updateUser({ data: { cerebras_key } }),
+    updateClaudeKey: (claude_key) => supabase.auth.updateUser({ data: { claude_key } }),
+    updateClaudeModel: (claude_model) => supabase.auth.updateUser({ data: { claude_model } }),
     updateAiProvider: (ai_provider) => supabase.auth.updateUser({ data: { ai_provider } }),
     signOut: () => supabase.auth.signOut(),
   }

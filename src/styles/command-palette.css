@@ -14,12 +14,9 @@
 }
 .cmdk {
   width: min(560px, 92vw);
-  background: var(--bg-elev);
-  border: 1px solid var(--border-strong);
-  border-radius: 14px;
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.5),
-    0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
+  background: var(--float-bg);
+  border-radius: 16px;
+  box-shadow: var(--float-shadow);
   overflow: hidden;
 }
 .cmdk-input {
@@ -37,14 +34,6 @@
   outline: none;
   color: var(--text);
   font-size: 16px;
-}
-.cmdk-input kbd {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-faint);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 2px 6px;
 }
 .cmdk-list {
   max-height: 52vh;

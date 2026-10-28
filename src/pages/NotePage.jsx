@@ -26,7 +26,6 @@ import AgentDialog from "../components/AgentDialog";
 import ShareDialog from "../components/ShareDialog";
 import ReminderDialog from "../components/ReminderDialog";
 import { computeSchedule } from "../components/Reminder";
-import { RingLoader } from "react-spinners";
 import { marked } from "marked";
 import { generateNote, transcribe } from "../lib/ai";
 import { recordVoice } from "../lib/recorder";
@@ -34,19 +33,10 @@ import { notesApi, remindersApi } from "../lib/store";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { isAncestor } from "../lib/tree";
 import { useLang } from "../context/LanguageContext";
+import { toast } from "../lib/toast";
 
 // 5 presets de tamanho de fonte (fator de escala)
 const FONT_SCALES = [0.85, 0.93, 1, 1.12, 1.28];
-
-// cor primária atual (para o spinner)
-function accentColor() {
-  if (typeof window === "undefined") return "#a855f7";
-  return (
-    getComputedStyle(document.documentElement)
-      .getPropertyValue("--accent")
-      .trim() || "#a855f7"
-  );
-}
 
 // conta checkboxes (to-dos) e os dias dos marcadores de progresso
 function countTasks(md) {
@@ -79,7 +69,6 @@ export default function NotePage({ onChanged, onDeleted }) {
   const [agentOpen, setAgentOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
-  const [aiError, setAiError] = useState(null);
   const [recording, setRecording] = useState(false);
   const [readMode, setReadMode] = useState(false);
   const [tagAdding, setTagAdding] = useState(false);
@@ -263,7 +252,6 @@ export default function NotePage({ onChanged, onDeleted }) {
 
   const runAi = async (instruction, meta) => {
     setAiOpen(false);
-    setAiError(null);
     // posiciona o indicador no cursor e rola até ele
     const ed0 = editorRef.current;
     if (ed0 && bodyRef.current) {
@@ -288,7 +276,7 @@ export default function NotePage({ onChanged, onDeleted }) {
         patch.emoji = Array.from(emoji.trim())[0] || emoji.trim();
       if (Object.keys(patch).length) queueSave(patch);
     } catch (e) {
-      setAiError(e.message || t("note.genFail"));
+      toast(e.message || t("note.genFail"));
     } finally {
       setAiBusy(false);
     }
@@ -299,7 +287,6 @@ export default function NotePage({ onChanged, onDeleted }) {
   const runRefactor = async (userPrompt, opts = {}) => {
     const silent = !!opts.silent;
     setRefactorOpen(false);
-    setAiError(null);
     const ed = editorRef.current;
     if (!ed) return;
     const current = ed.storage.markdown.getMarkdown();
@@ -343,7 +330,7 @@ export default function NotePage({ onChanged, onDeleted }) {
         }
       }
     } catch (e) {
-      setAiError(e.message || t("note.refactorFail"));
+      toast(e.message || t("note.refactorFail"));
     } finally {
       if (!silent) setAiBusy(false);
     }
@@ -352,7 +339,6 @@ export default function NotePage({ onChanged, onDeleted }) {
   // roda um ou mais agentes (soma os prompts) + instrução, insere no cursor
   const runAgent = async (chosenAgents, instruction) => {
     setAgentOpen(false);
-    setAiError(null);
     const ed0 = editorRef.current;
     if (ed0 && bodyRef.current) {
       ed0.chain().focus().scrollIntoView().run();
@@ -380,7 +366,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       if (ed && content)
         ed.chain().focus().insertContent(marked.parse(content)).run();
     } catch (e) {
-      setAiError(e.message || t("note.agentFail"));
+      toast(e.message || t("note.agentFail"));
     } finally {
       setAiBusy(false);
     }
@@ -394,7 +380,6 @@ export default function NotePage({ onChanged, onDeleted }) {
       return;
     }
     if (refRec !== "idle") return;
-    setAiError(null);
     setRefRec("recording");
     let blob;
     try {
@@ -403,7 +388,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       blob = await r.promise;
     } catch {
       setRefRec("idle");
-      setAiError(t("voice.micAccessFail"));
+      toast(t("voice.micAccessFail"));
       return;
     }
     setRefRec("transcribing");
@@ -412,7 +397,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       text = await transcribe(blob);
     } catch (e) {
       setRefRec("idle");
-      setAiError(e.message || t("note.transcribeFail"));
+      toast(e.message || t("note.transcribeFail"));
       return;
     }
     if (!text) {
@@ -440,7 +425,6 @@ export default function NotePage({ onChanged, onDeleted }) {
         setAiPos({ top: 0, left: 0 });
       }
     }
-    setAiError(null);
     setRecording(true);
     let blob;
     try {
@@ -449,7 +433,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       blob = await rec.promise;
     } catch {
       setRecording(false);
-      setAiError(t("voice.micAccessFail"));
+      toast(t("voice.micAccessFail"));
       return;
     }
     setRecording(false);
@@ -472,7 +456,7 @@ export default function NotePage({ onChanged, onDeleted }) {
       if (ed && content)
         ed.chain().focus().insertContent(marked.parse(content)).run();
     } catch (e) {
-      setAiError(e.message || t("note.genFail"));
+      toast(e.message || t("note.genFail"));
     } finally {
       setAiBusy(false);
     }
@@ -733,12 +717,6 @@ export default function NotePage({ onChanged, onDeleted }) {
     });
   const focusBody = () => editorRef.current?.commands.focus("start");
 
-  // some o balão de erro sozinho depois de alguns segundos
-  useEffect(() => {
-    if (!aiError) return;
-    const t = setTimeout(() => setAiError(null), 6000);
-    return () => clearTimeout(t);
-  }, [aiError]);
 
   // sincroniza o título (carregar nota / título gerado pela IA) sem mover o cursor
   useEffect(() => {
@@ -966,16 +944,7 @@ export default function NotePage({ onChanged, onDeleted }) {
               style={{ top: aiPos.top, left: aiPos.left }}
             >
               <span className="ai-generating-text">{t("note.generating")}</span>
-              <RingLoader color={accentColor()} size={20} />
-            </div>
-          )}
-          {aiError && (
-            <div
-              className="ai-error"
-              style={{ top: aiPos.top, left: aiPos.left }}
-            >
-              <span className="ai-error-msg">{aiError}</span>
-              <button onClick={() => setAiError(null)}>×</button>
+              <Spinner size="sm" />
             </div>
           )}
           <Editor
@@ -1017,7 +986,7 @@ export default function NotePage({ onChanged, onDeleted }) {
             {refRec === "recording" ? (
               <Square size={18} fill="currentColor" />
             ) : refRec === "transcribing" || refRec === "generating" ? (
-              <RingLoader color={accentColor()} size={26} />
+              <Spinner size="sm" />
             ) : (
               <Mic size={micPos.dock ? 16 : 20} />
             )}

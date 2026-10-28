@@ -86,49 +86,6 @@
   color: var(--text-faint);
   cursor: text;
 }
-/* skeleton de carregamento (shimmer na cor do tema) */
-.skeleton-card {
-  pointer-events: none;
-  min-height: 150px;
-  animation: fade-in 0.3s ease both;
-}
-.sk {
-  border-radius: 6px;
-  background: linear-gradient(
-    90deg,
-    var(--surface-hover) 25%,
-    color-mix(in srgb, var(--accent) 16%, var(--surface-hover)) 50%,
-    var(--surface-hover) 75%
-  );
-  background-size: 200% 100%;
-  animation: sk-shimmer 1.3s ease-in-out infinite;
-}
-.sk-title {
-  height: 18px;
-  width: 58%;
-  margin-bottom: 16px;
-}
-.sk-line {
-  height: 11px;
-  width: 100%;
-  margin-bottom: 9px;
-}
-.sk-line.short {
-  width: 65%;
-}
-.sk-bar {
-  height: 8px;
-  width: 100%;
-  border-radius: 99px;
-}
-@keyframes sk-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
 
 /* rodapé do card: empurra a barra de progresso pro fundo (alinha entre cards) */
 .goal-foot {

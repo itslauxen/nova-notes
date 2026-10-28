@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Plus, Trash2, Check, Share2 } from "lucide-react";
+import { Plus, Trash2, Check, Share2 } from "lucide-react";
 import { agentsApi } from "../lib/store";
 import { useLang } from "../context/LanguageContext";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ShareDialog from "../components/ShareDialog";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
+import Spinner from "../components/Spinner";
 
 // Página de Agentes: prompts em Markdown reutilizáveis (usados no atalho /agente).
 export default function Agents() {
@@ -48,23 +51,22 @@ export default function Agents() {
   };
 
   return (
-    <div className="panel" style={{ maxWidth: 820 }}>
-      <div className="panel-title">
-        <Bot size={22} style={{ verticalAlign: "-4px", marginRight: 8, color: "var(--accent)" }} />
-        {t("nav.agents")}
-      </div>
-      <div className="panel-sub">
-        {t("agents.subPre")}<code>/agente</code>{t("agents.subPost")}
-      </div>
-
-      <button className="btn-primary" onClick={create} style={{ marginBottom: 20 }}>
-        <Plus size={15} /> {t("agents.newAgent")}
-      </button>
+    <div className="panel">
+      <PageHeader title={t("nav.agents")} sub={<>{t("agents.subPre")}<code>/agente</code>{t("agents.subPost")}</>}>
+        {/* lista vazia: a ação fica só dentro do EmptyState */}
+        {(loading || agents.length > 0) && (
+          <button className="btn-primary" onClick={create}>
+            <Plus size={15} /> {t("agents.newAgent")}
+          </button>
+        )}
+      </PageHeader>
 
       {loading ? (
-        <div className="agent-empty">{t("agents.loading")}</div>
+        <Spinner inline />
       ) : agents.length === 0 ? (
-        <div className="agent-empty">{t("agents.empty")}</div>
+        <div className="agent-list">
+          <EmptyState text={t("agents.empty")} actionLabel={t("agents.create")} onAction={create} />
+        </div>
       ) : (
         <div className="agent-list">
           {agents.map((a) => (
@@ -97,7 +99,7 @@ export default function Agents() {
                 </button>
               </div>
               <textarea
-                className="agent-prompt field"
+                className="agent-prompt"
                 rows={5}
                 placeholder={t("agents.promptPlaceholder")}
                 value={a.content || ""}
@@ -120,7 +122,7 @@ export default function Agents() {
                   <input className="agent-name" value={a.title || ""} readOnly />
                 </div>
                 <textarea
-                  className="agent-prompt field"
+                  className="agent-prompt"
                   rows={5}
                   value={a.content || ""}
                   readOnly

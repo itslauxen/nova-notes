@@ -48,16 +48,9 @@
 }
 
 /* loader inline (dentro de uma página) */
-.inline-loader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 80px 0;
-  color: var(--text-faint);
-}
-.inline-loader .ring {
+/* anel de carregamento padrão (Spinner): o mesmo em todas as páginas */
+.ring {
+  display: block;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -67,10 +60,11 @@
   box-shadow: 0 0 16px var(--accent-glow);
   animation: spin 0.85s linear infinite;
 }
-.inline-loader span {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 4px;
-  text-transform: uppercase;
+/* versão pequena, dentro de textos e botões */
+.ring.ring-sm {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 

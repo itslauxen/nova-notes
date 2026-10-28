@@ -7,53 +7,97 @@
 .agent-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
+/* o cabeçalho usa a largura toda; a lista (campos de texto) fica numa medida legível */
+.agent-list,
+.agent-empty {
+  max-width: 820px;
+}
+/* card do agente: sem contorno nem caixa dentro de caixa — um degrau de fundo,
+   que clareia enquanto se edita; o prompt é o próprio texto do card */
 .agent-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  border-radius: 14px;
+  padding: 14px 18px 16px;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  transition: background 0.15s;
+}
+.agent-card:focus-within {
+  background: var(--surface);
 }
 .agent-card-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 .agent-name {
   flex: 1 1 auto;
   min-width: 0;
+  padding: 4px 0;
   background: transparent;
   border: none;
   outline: none;
   color: var(--text);
+  font-family: inherit;
   font-weight: 600;
   font-size: 15px;
+}
+.agent-name::placeholder {
+  color: var(--text-faint);
 }
 .agent-saved {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  margin-right: 6px;
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 .agent-del {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
   color: var(--text-faint);
-  padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .agent-del:hover {
-  color: #ff6b78;
+  color: var(--text);
   background: var(--surface-hover);
 }
-.agent-prompt {
-  width: 100%;
-  resize: vertical;
-  font-size: 13.5px;
-  line-height: 1.5;
-  min-height: 90px;
+.agent-del:last-child:hover {
+  color: #ff7a7a;
+  background: color-mix(in srgb, #ef4444 16%, transparent);
 }
-
+.agent-del:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.agent-prompt {
+  display: block;
+  width: 100%;
+  min-height: calc(1.6em * 3);
+  padding: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  field-sizing: content; /* cresce com o texto (navegadores sem suporte usam a altura das 5 linhas) */
+  background: transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.agent-prompt:focus {
+  color: var(--text);
+}
+.agent-prompt::placeholder {
+  color: var(--text-faint);
+}

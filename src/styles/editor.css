@@ -9,13 +9,18 @@
   animation: spin 1s linear infinite;
 }
 
-/* loader da página (RingLoader), centralizado */
+/* loader da página (Spinner), centralizado */
 .page-loader {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* no fluxo: abaixo do cabeçalho da página */
+.page-loader.inline {
+  position: static;
+  padding: 72px 0;
 }
 @keyframes spin {
   to {

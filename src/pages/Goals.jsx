@@ -18,6 +18,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { Plus, Trash2, Check, Pencil, MoreVertical } from "lucide-react";
 import { notesApi } from "../lib/store";
 import { useLang } from "../context/LanguageContext";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
+import Spinner from "../components/Spinner";
 
 marked.setOptions({ breaks: true });
 const stop = (e) => e.stopPropagation();
@@ -236,23 +239,14 @@ export default function Goals() {
 
   return (
     <div className="panel">
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
-        <div>
-          <div className="panel-title">{t("nav.goals")}</div>
-          <div className="panel-sub">
-            {t("goals.sub")}
-          </div>
-        </div>
-        <button className="btn-primary" onClick={add}>
-          <Plus size={16} style={{ verticalAlign: "middle" }} /> {t("common.new")}
-        </button>
-      </div>
+      <PageHeader title={t("nav.goals")} sub={t("goals.sub")}>
+        {/* lista vazia: a ação fica só dentro do EmptyState */}
+        {!(!loading && !error && goals.length === 0) && (
+          <button className="btn-primary" onClick={add}>
+            <Plus size={16} style={{ verticalAlign: "middle" }} /> {t("common.new")}
+          </button>
+        )}
+      </PageHeader>
 
       {error && (
         <div
@@ -275,27 +269,9 @@ export default function Goals() {
       )}
 
       {loading ? (
-        <div className="goals-grid">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              className="card goal-card skeleton-card"
-              key={i}
-              style={{ animationDelay: `${i * 0.08}s` }}
-            >
-              <div className="sk sk-title" />
-              <div className="sk sk-line" />
-              <div className="sk sk-line" />
-              <div className="sk sk-line short" />
-              <div className="goal-foot">
-                <div className="sk sk-bar" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <Spinner inline />
       ) : error ? null : goals.length === 0 ? (
-        <p style={{ color: "var(--text-dim)" }}>
-          {t("goals.empty")}
-        </p>
+        <EmptyState text={t("goals.empty")} actionLabel={t("goals.create")} onAction={add} />
       ) : (
         <DndContext
           sensors={sensors}

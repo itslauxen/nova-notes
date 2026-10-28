@@ -120,7 +120,7 @@ export default function App() {
 
   // nota "fantasma" pra UI otimista (aparece na sidebar antes do banco responder)
   const optimisticNote = (id, extra = {}) => ({
-    id, title: t('common.untitled'), content: '', emoji: '📄', tags: [],
+    id, title: '', content: '', emoji: '📄', tags: [],
     is_goal: false, is_agent: false, progress: 0, done: false, position: 0, parent_id: null,
     created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...extra,
   })

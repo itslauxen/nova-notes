@@ -1,38 +1,176 @@
-/* tela de login */
+/* tela de login: mesma linguagem do app (fundo do tema + starfield, galáxia
+   da Home solta no fundo, botão e campos do app). O form fica à direita.
+   Grid desktop: 16px + núcleo (1fr) + 16px + form (minmax 400–560) + 16px */
 .auth {
   position: fixed;
   inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(400px, 560px);
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+  overflow-y: auto;
+}
+.auth-core {
+  position: relative;
+  min-height: 0;
+  /* arrastar gira a cena, sem rolar nem selecionar */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.auth-core canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.auth-side {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background: var(--bg);
+  padding: 32px 40px;
 }
-.auth-card {
-  width: min(380px, 94vw);
+.auth-form {
+  width: 100%;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+.auth-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border-strong);
-  border-radius: 16px;
-  padding: 30px 26px;
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.5),
-    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  margin-bottom: 20px;
 }
 .auth-logo {
-  align-self: center;
   display: block;
   color: var(--accent);
   filter: drop-shadow(0 0 12px var(--accent-glow));
 }
 .auth-title {
-  text-align: center;
+  font-size: 32px;
   font-weight: 700;
-  font-size: 26px;
+  line-height: 1.1;
   letter-spacing: 0.5px;
 }
+.auth-sub {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+/* mesmo visual do .field do app, um pouco mais alto pro toque */
+.auth-field input {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-elev) 80%, transparent);
+  color: var(--text);
+  font-size: 16px; /* 16px: o iOS não dá zoom ao focar */
+  outline: none;
+  transition: border-color 0.15s;
+}
+.auth-field input:hover {
+  border-color: var(--border-strong);
+}
+.auth-field input:focus {
+  border-color: var(--accent);
+}
+.auth-field small {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+/* mesmo visual do .btn-primary do app */
+.auth-submit {
+  height: 44px;
+  margin-top: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 15px;
+  font-weight: 600;
+  transition:
+    filter 0.15s,
+    transform 0.1s;
+}
+.auth-submit:hover {
+  filter: brightness(1.08);
+}
+.auth-submit:active {
+  transform: scale(0.98);
+}
+.auth-submit:focus-visible,
+.auth-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.auth-msg {
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+}
+.auth-msg.err {
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+  color: #fca5a5;
+}
+:root[data-mode="light"] .auth-msg.err {
+  color: #b91c1c;
+}
+.auth-msg.ok {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.auth-switch {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+/* só a palavra é o botão */
+.auth-toggle {
+  padding: 4px 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  transition: filter 0.15s;
+}
+.auth-toggle:hover {
+  filter: brightness(1.15);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* celular e tablet: sem galáxia (só o starfield), form centralizado na altura */
+@media (max-width: 900px) {
+  .auth {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: calc(env(safe-area-inset-top, 0px) + 20px) 24px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+  .auth-side {
+    padding: 0;
+  }
+  .auth-head {
+    margin-bottom: 8px;
+  }
+  .auth-title {
+    font-size: 28px;
+  }
+}
+
 /* glitch no título "hero" (login + Home): NORMAL a maior parte do tempo,
    com piscadinhas curtas de RGB-split desalinhado. Não sobrescreve a cor/
    sombra do título — só sobrepõe os flickers. */
@@ -88,31 +226,3 @@
   80.5% { opacity: 0.85; transform: translate(-3px, 1px); clip-path: inset(55% 0 20% 0); }
   81.5% { opacity: 0; }
 }
-.auth-sub {
-  text-align: center;
-  color: var(--text-dim);
-  font-size: 13.5px;
-  margin-bottom: 8px;
-}
-.auth-msg {
-  font-size: 13px;
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-}
-.auth-msg.err {
-  background: color-mix(in srgb, #ef4444 18%, transparent);
-  color: #fca5a5;
-}
-.auth-msg.ok {
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
-.auth-toggle {
-  color: var(--text-dim);
-  font-size: 13px;
-  margin-top: 4px;
-}
-.auth-toggle:hover {
-  color: var(--accent);
-}
-
